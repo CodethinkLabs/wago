@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bank.go",
+        "cli.go",
+        "delete.go",
+        "send.go",
+    ],
+    importpath = "github.com/CodethinkLabs/wago/pkg/cli",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/util:go_default_library",
+        "//pkg/wallet:go_default_library",
+        "@com_github_c_bata_go_prompt//:go_default_library",
+        "@org_golang_x_crypto//ed25519:go_default_library",
+    ],
+)

@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "listener.go",
+        "raft.go",
+    ],
+    importpath = "github.com/CodethinkLabs/wago/pkg/raft",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_etcd_go_etcd//etcdserver/api/rafthttp:go_default_library",
+        "@io_etcd_go_etcd//etcdserver/api/snap:go_default_library",
+        "@io_etcd_go_etcd//etcdserver/api/v2stats:go_default_library",
+        "@io_etcd_go_etcd//pkg/fileutil:go_default_library",
+        "@io_etcd_go_etcd//pkg/types:go_default_library",
+        "@io_etcd_go_etcd//raft:go_default_library",
+        "@io_etcd_go_etcd//raft/raftpb:go_default_library",
+        "@io_etcd_go_etcd//wal:go_default_library",
+        "@io_etcd_go_etcd//wal/walpb:go_default_library",
+        "@org_uber_go_zap//:go_default_library",
+    ],
+)
