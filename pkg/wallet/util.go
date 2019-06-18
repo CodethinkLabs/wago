@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-// ensures a set of currencies are valid
+// a set of currencies are valid iff:
 //   - value and decimal is positive
 //   - decimal == decimal % 100
 func (s Currencies) isValid() bool {
@@ -23,6 +23,7 @@ func (s Currencies) isValid() bool {
 	return true
 }
 
+// subtract one bank of currencies from another (piecewise)
 func (s Currencies) Subtract(s2 Currencies) Currencies {
 	out := Currencies{}
 
@@ -45,6 +46,7 @@ func (s Currencies) Subtract(s2 Currencies) Currencies {
 	return out
 }
 
+// returns the inverse value for each currency in the bank
 func (s Currencies) Inverse() Currencies {
 	out := Currencies{}
 
@@ -55,6 +57,8 @@ func (s Currencies) Inverse() Currencies {
 	return out
 }
 
+// subtracts one DecimalAmount from another,
+// accounting for integer rollover
 func (d DecimalAmount) Subtract(d2 DecimalAmount) DecimalAmount {
 	newDecimal := (d.Decimal - d2.Decimal) % 100
 	newValue := d.Value - d2.Value
@@ -65,20 +69,23 @@ func (d DecimalAmount) Subtract(d2 DecimalAmount) DecimalAmount {
 	return DecimalAmount{Decimal: newDecimal, Value: newValue}
 }
 
+// constructor for the transaction struct
 func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) transaction {
 	return transaction{src, dest, [64]byte{}, curr, amount, create}
 }
 
-// returns the inverse under addition
+// returns the inverse decimal amount under addition
 func (d DecimalAmount) Inverse() DecimalAmount {
 	return DecimalAmount{Value: -d.Value, Decimal: -d.Decimal}
 }
 
+// returns whether the DecimalAmount is positive
 func (d DecimalAmount) isPositive() bool {
 	return d.Value >= 0 && d.Decimal >= 0
 }
 
-func (t transaction) ToBytes() []byte {
+// gets a []byte representation that can be signed
+func (t transaction) GetSignableRepresentation() []byte {
 	type sign struct {
 		Src    ed25519.PublicKey
 		Dest   ed25519.PublicKey
@@ -96,12 +103,13 @@ func (t transaction) ToBytes() []byte {
 
 // validates a request to pay somebody
 func (t transaction) IsVerified() bool {
-	return t.Create || ed25519.Verify(t.Src, t.ToBytes(), t.Sig[:])
+	return t.Create || ed25519.Verify(t.Src, t.GetSignableRepresentation(), t.Sig[:])
 }
 
+// signs a request to pay somebody
 func (t *transaction) Sign(key ed25519.PrivateKey) {
 	if !t.Create {
-		copy(t.Sig[:], ed25519.Sign(key, t.ToBytes()))
+		copy(t.Sig[:], ed25519.Sign(key, t.GetSignableRepresentation()))
 	}
 }
 

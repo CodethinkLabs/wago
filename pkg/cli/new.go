@@ -26,8 +26,8 @@ func newCommand(args []string, store *wallet.WalletStore) error {
 		return err
 	}
 
-	walletFile := wallet.ReadWallet()
-	walletFile = wallet.AddKeys(walletFile, publicKey, privateKey)
+	walletFile, err := wallet.ReadWallet()
+	walletFile = wallet.AddKeyPair(walletFile, publicKey, privateKey)
 	wallet.WriteWallet(walletFile)
 	return nil
 }

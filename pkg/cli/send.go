@@ -33,7 +33,10 @@ var SendCommand = createCommand("send", sendExecutor, sendCompleter)
 var CreateCommand = createCommand("create", createExecutor, createCompleter)
 
 func sendExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile := wallet.ReadWallet()
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return err
+	}
 	ctx := sendContext{}
 
 	switch len(args) {
@@ -66,7 +69,10 @@ func sendExecutor(args []string, store *wallet.WalletStore) error {
 }
 
 func sendCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
-	walletFile := wallet.ReadWallet()
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return []prompt.Suggest{}
+	}
 	suggestions := make([]prompt.Suggest, 0)
 	currentCommand := in.TextBeforeCursor()
 	args := strings.Split(currentCommand, " ")
@@ -100,7 +106,10 @@ func sendCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sugge
 }
 
 func createExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile := wallet.ReadWallet()
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return err
+	}
 	ctx := sendContext{}
 
 	switch len(args) {
@@ -127,8 +136,12 @@ func createExecutor(args []string, store *wallet.WalletStore) error {
 }
 
 func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
-	walletFile := wallet.ReadWallet()
 	suggestions := make([]prompt.Suggest, 0)
+
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return suggestions
+	}
 	currentCommand := in.TextBeforeCursor()
 	args := strings.Split(currentCommand, " ")
 

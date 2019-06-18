@@ -12,7 +12,10 @@ import (
 var BankCommand = createCommand("bank", bankExecutor, nil)
 
 func bankExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile := wallet.ReadWallet()
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return err
+	}
 	if len(walletFile) == 0 {
 		println("No keys in wallet.")
 		return nil

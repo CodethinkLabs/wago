@@ -17,8 +17,12 @@ func deleteExecutor(args []string, store *wallet.WalletStore) error {
 	if len(args) != 2 {
 		return fmt.Errorf("must provide exactly one address")
 	}
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		return err
+	}
+
 	key := args[1]
-	walletFile := wallet.ReadWallet()
 	i := 0
 	for _, keyPair := range walletFile {
 		if !strings.HasPrefix(hex.EncodeToString(keyPair.PublicKey), key) {
@@ -39,7 +43,11 @@ func deleteExecutor(args []string, store *wallet.WalletStore) error {
 
 func deleteCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
 	suggestions := make([]prompt.Suggest, 0)
-	walletFile := wallet.ReadWallet()
+	walletFile, err := wallet.ReadWallet()
+	if err != nil {
+		// if unauthed, dont suggest anything
+		return []prompt.Suggest{}
+	}
 	for _, keyPair := range walletFile {
 		suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
 	}

@@ -3,9 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "walletfile.go",
-        "walletstore.go",
-        "walletutil.go",
+        "file.go",
+        "store.go",
+        "util.go",
     ],
     importpath = "github.com/CodethinkLabs/wago/pkg/wallet",
     visibility = ["//visibility:public"],
@@ -22,8 +22,8 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "walletstore_test.go",
-        "walletutil_test.go",
+        "store_test.go",
+        "util_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
