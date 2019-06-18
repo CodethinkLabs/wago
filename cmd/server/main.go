@@ -1,3 +1,14 @@
+// package main is the entry point into the server
+// command line interface
+//
+// Program flags:
+//  --cluster: A comma separated list of peer IP addresses
+//  --id:      This node's index in the list of peers
+//  --join:    Whether this node is joining an existing cluster
+//
+// The cluster string should be identical between all nodes.
+// Because the ID has to be unique between nodes, we can use that
+// to assign the addresses. ID 1 takes the first IP address and so on.
 package main
 
 import (
