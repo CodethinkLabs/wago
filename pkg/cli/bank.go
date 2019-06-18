@@ -17,7 +17,7 @@ func bankExecutor(args []string, store *wallet.WalletStore) error {
 		return err
 	}
 	if len(walletFile) == 0 {
-		println("No keys in wallet.")
+		fmt.Println("No credentials in wallet.")
 		return nil
 	}
 	for _, key := range walletFile {

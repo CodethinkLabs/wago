@@ -7,9 +7,17 @@ used in any trust-less system.
 
 ### Usage:
 
+There are a few ways to run the program:
+
 ```bash
-bazel build //:gazelle
+# using go directly
+go run cmd/server/main.go
+
+# using bazel
 bazel run //cmd/server:main
+
+# using docker
+docker run -it arlyon/wago:latest
 ```
 
 At this point you will be greeted by a menu. Type `new` to create a new

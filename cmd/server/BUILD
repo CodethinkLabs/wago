@@ -10,6 +10,7 @@ go_library(
         "//pkg/raft:go_default_library",
         "//pkg/wallet:go_default_library",
         "@com_github_c_bata_go_prompt//:go_default_library",
+        "@io_etcd_go_etcd//raft:go_default_library",
         "@io_etcd_go_etcd//raft/raftpb:go_default_library",
     ],
 )

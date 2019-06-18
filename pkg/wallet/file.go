@@ -147,7 +147,7 @@ func AddKeyPair(wallet localWallet, publicKey ed25519.PublicKey, privateKey ed25
 		}
 	}
 	wallet = append(wallet, credentials{PublicKey: publicKey, PrivateKey: privateKey})
-	log.Println("New wallet appended to file")
+	log.Println("New credentials appended to file")
 	return wallet
 }
 

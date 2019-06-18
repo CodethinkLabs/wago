@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"golang.org/x/crypto/ed25519"
 	"strings"
@@ -29,5 +30,6 @@ func newCommand(args []string, store *wallet.WalletStore) error {
 	walletFile, err := wallet.ReadWallet()
 	walletFile = wallet.AddKeyPair(walletFile, publicKey, privateKey)
 	wallet.WriteWallet(walletFile)
+	fmt.Printf("Added new credentials to wallet: %x\n", publicKey[:6])
 	return nil
 }

@@ -14,14 +14,24 @@ package main
 import (
 	"flag"
 	"github.com/CodethinkLabs/wago/pkg/cli"
-	"github.com/CodethinkLabs/wago/pkg/raft"
+	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
+	etcdRaft "go.etcd.io/etcd/raft"
 	"go.etcd.io/etcd/raft/raftpb"
+	"io/ioutil"
+	"log"
 	"strings"
 )
 
 var store *wallet.WalletStore
+
+// disable logging to stdout
+func init() {
+	discard := log.New(ioutil.Discard, "", 0)
+	etcdRaft.SetLogger(&etcdRaft.DefaultLogger{Logger: discard})
+	wagoRaft.Log = discard
+}
 
 func main() {
 	cluster := flag.String("cluster", "http://127.0.0.1:9020", "comma separated cluster peers")
@@ -35,7 +45,7 @@ func main() {
 	defer close(confChangeC)
 
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
-	commitC, errorC, snapshotterReady := raft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, store.GetSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, store.GetSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
 	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)

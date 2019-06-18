@@ -152,10 +152,14 @@ func (s *WalletStore) readCommits(commitC <-chan *string, errorC <-chan error) {
 
 		if walletFile, err := ReadWallet(); err == nil {
 			if walletFile.Lookup(nextTrans.Src) != nil {
-				fmt.Printf("\nTransfer of %v %s successfully sent to %x\n", nextTrans.Amount, nextTrans.Curr, nextTrans.Dest)
+				fmt.Printf("Transfer of %v %s successfully sent to %x\n", nextTrans.Amount, nextTrans.Curr, nextTrans.Dest)
 			}
 			if walletFile.Lookup(nextTrans.Dest) != nil {
-				fmt.Printf("\nYou got money! Transfer of %v %s successfully received from %x\n", nextTrans.Amount, nextTrans.Curr, nextTrans.Src)
+				if nextTrans.Create {
+					fmt.Printf("You got money! Created %v %s successfully\n", nextTrans.Amount, nextTrans.Curr)
+				} else {
+					fmt.Printf("You got money! Transfer of %v %s successfully received from %x\n", nextTrans.Amount, nextTrans.Curr, nextTrans.Src)
+				}
 			}
 		}
 	}
