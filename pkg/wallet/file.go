@@ -19,7 +19,7 @@ import (
 	"syscall"
 )
 
-const WALLET = "wallet"
+const WALLETFILE = "wallet"
 
 type walletentry struct {
 	PrivateKey ed25519.PrivateKey `yaml:",flow"`
@@ -70,7 +70,7 @@ func WriteWallet(wallet walletfile) {
 		data = AESEncrypt(data, password)
 	}
 
-	err = ioutil.WriteFile(WALLET, data, 0600)
+	err = ioutil.WriteFile(WALLETFILE, data, 0600)
 	if err != nil {
 		log.Fatal("Could not write wallet")
 	}
@@ -78,7 +78,7 @@ func WriteWallet(wallet walletfile) {
 
 // reads the walletfile from disk
 func ReadWallet() walletfile {
-	data, err := ioutil.ReadFile(WALLET)
+	data, err := ioutil.ReadFile(WALLETFILE)
 	if err != nil {
 		data = createWalletFile(data)
 	}
@@ -210,7 +210,7 @@ func AESDecrypt(data []byte, password string) []byte {
 func createWalletFile(data []byte) []byte {
 	// file does not exist
 	data = []byte("AESENCRYPT")
-	err := ioutil.WriteFile(WALLET, data, 0600)
+	err := ioutil.WriteFile(WALLETFILE, data, 0600)
 
 	if err != nil {
 		log.Fatal("Could not create wallet file")
