@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"golang.org/x/crypto/ed25519"
 	"os"
 	"strconv"
 	"strings"
-	"wago/pkg/wallet"
 )
 
 type commandContext struct {

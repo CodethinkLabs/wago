@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"wago/pkg/wallet"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
 
 func SendTransactionCommand(store wallet.WalletStore, ctx commandContext, create bool) {

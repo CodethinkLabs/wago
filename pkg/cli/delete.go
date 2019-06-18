@@ -3,8 +3,8 @@ package cli
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"strings"
-	"wago/pkg/wallet"
 )
 
 func DeleteCommand(args []string) {

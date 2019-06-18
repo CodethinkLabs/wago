@@ -11,11 +11,11 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/util:go_default_library",
-        "@com_github_alecaivazis_survey//:go_default_library",
         "@in_gopkg_yaml_v2//:go_default_library",
         "@io_etcd_go_etcd//etcdserver/api/snap:go_default_library",
         "@org_golang_x_crypto//ed25519:go_default_library",
         "@org_golang_x_crypto//pbkdf2:go_default_library",
+        "@org_golang_x_crypto//ssh/terminal:go_default_library",
     ],
 )
 

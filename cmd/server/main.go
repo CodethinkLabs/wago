@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
+	"github.com/CodethinkLabs/wago/pkg/cli"
+	"github.com/CodethinkLabs/wago/pkg/raft"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"go.etcd.io/etcd/raft/raftpb"
 	"strings"
-	"wago/pkg/cli"
-	"wago/pkg/raft"
-	"wago/pkg/wallet"
 )
 
 var store *wallet.WalletStore

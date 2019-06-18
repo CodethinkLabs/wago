@@ -8,14 +8,15 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"github.com/AlecAivazis/survey"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
 	"strings"
+	"syscall"
 )
 
 const WALLET = "wallet"
@@ -99,8 +100,12 @@ func ReadWallet() walletfile {
 
 func Authenticate(newPassword *string) {
 	if newPassword == nil {
-		prompt := &survey.Password{}
-		survey.AskOne(prompt, &password, nil)
+		fmt.Print("Enter Password: ")
+		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		if err == nil {
+			fmt.Println("\nPassword typed: " + string(bytePassword))
+		}
+		password = strings.TrimSpace(string(bytePassword))
 	} else {
 		password = *newPassword
 	}

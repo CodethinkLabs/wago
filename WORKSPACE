@@ -24,8 +24,9 @@ gazelle_dependencies()
 
 go_repository(
     name = "io_etcd_go_etcd",
+    build_file_proto_mode = "disable",
     commit = "b1812a410fbca6fb77bf95b496408c7b75d0a370",
-    importpath = "github.com/etcd-io/etcd",
+    importpath = "go.etcd.io/etcd",
 )
 
 go_repository(
@@ -36,17 +37,36 @@ go_repository(
 
 go_repository(
     name = "org_golang_x_crypto",
+    commit = "57b3e21c3d5606066a87e63cfe07ec6b9f0db000",
     importpath = "golang.org/x/crypto",
-    type = "zip",
 )
 
 go_repository(
-    name = "org_uber_go_zap",
-    importpath = "go.uber.org/zap",
+    name = "org_uber_go_atomic",
+    importpath = "go.uber.org/atomic",
+    tag = "v1.4.0",
 )
 
 go_repository(
-    name = "com_github_alecaivazis_survey",
-    importpath = "github.com/alecaivazis/survey",
-    tag = "v2.0.0",
+    name = "org_uber_go_multierr",
+    importpath = "go.uber.org/multierr",
+    tag = "v1.1.0",
+)
+
+go_repository(
+    name = "in_gopkg_yaml_v2",
+    importpath = "gopkg.in/yaml.v2",
+    tag = "v2.2.2",
+)
+
+go_repository(
+    name = "com_github_mattn_go_runewidth",
+    importpath = "github.com/mattn/go-runewidth",
+    tag = "v0.0.4",
+)
+
+go_repository(
+    name = "com_github_pkg_term",
+    commit = "aa71e9d9e942418fbb97d80895dcea70efed297c",
+    importpath = "github.com/pkg/term",
 )

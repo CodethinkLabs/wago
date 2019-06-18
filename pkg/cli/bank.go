@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"wago/pkg/util"
-	"wago/pkg/wallet"
+	"github.com/CodethinkLabs/wago/pkg/util"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
 
 func BankCommand(args []string, store *wallet.WalletStore) {

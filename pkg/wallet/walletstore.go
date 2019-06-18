@@ -11,12 +11,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/util"
 	"go.etcd.io/etcd/etcdserver/api/snap"
 	"golang.org/x/crypto/ed25519"
 	"log"
 	"strings"
 	"sync"
-	"wago/pkg/util"
 )
 
 type DecimalAmount struct {
