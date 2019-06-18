@@ -57,8 +57,7 @@ func StoreExecutor(in string, store *wallet.WalletStore) {
 		if args[0] == c.name {
 			err := c.executor(args, store)
 			if err != nil {
-				// todo handle
-				panic(err)
+				fmt.Printf("Error with previous command: %s\n", err)
 			} else {
 				return
 			}

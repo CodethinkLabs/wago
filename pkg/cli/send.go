@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"golang.org/x/crypto/ed25519"
@@ -21,44 +22,56 @@ type sendContext struct {
 	Currency   wallet.Currency
 }
 
-func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) {
+// creates a transaction and proposes it to the cluster
+// param create: If this flag is specified, the transaction is a "create" command
+// 				 meaning that the currency will be generated from nothing.
+//			     Create commands with a source public or private key will error.
+func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) error {
 	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
-	trans.Sign(ctx.SrcPrivate)
 
-	err := store.Propose(trans)
-	if err != nil {
-		panic(err)
+	if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
+		return fmt.Errorf("private key for address %x is the wrong length", ctx.SrcPublic)
+	} else if create && len(ctx.SrcPrivate) != 0 && len(ctx.SrcPublic) != 0 {
+		// we panic here because the invariant is the fault of the programmer
+		panic(fmt.Errorf("source private or public key passed to create command"))
 	}
+
+	trans.Sign(ctx.SrcPrivate)
+	err := store.Propose(trans)
+	return err // or nil
 }
 
 func sendExecutor(args []string, store *wallet.WalletStore) error {
 	walletFile := wallet.ReadWallet()
 	ctx := sendContext{}
 
-	if len(args) > 1 && args[0] == "send" {
-		if match, ok := walletFile.PrefixSearch(args[1]); ok {
-			ctx.SrcPublic = match
-			ctx.SrcPrivate = walletFile.Lookup(match)
-		}
-	}
-	if len(args) > 2 && args[0] == "send" {
+	switch len(args) {
+	default:
+		fallthrough
+	case 5: // currency
+		ctx.Currency = wallet.Currency(args[4])
+		fallthrough
+	case 4: // amount todo decimal numbers a well
+		num, _ := strconv.Atoi(args[3])
+		ctx.Value = int64(num)
+		fallthrough
+	case 3: // dst address
 		if match, ok := store.PrefixSearch(args[2]); ok {
 			ctx.DstPublic = match
 		} else if hexBytes, err := hex.DecodeString(args[2]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
 			ctx.DstPublic = hexBytes
 		}
-	}
-	if len(args) > 3 && args[0] == "send" {
-		// todo decimal numbers a well
-		num, _ := strconv.Atoi(args[3])
-		ctx.Value = int64(num)
-	}
-	if len(args) > 4 && args[0] == "send" {
-		ctx.Currency = wallet.Currency(args[4])
+		fallthrough
+	case 2: // src address
+		if match, ok := walletFile.PrefixSearch(args[1]); ok {
+			ctx.SrcPublic = match
+			ctx.SrcPrivate = walletFile.Lookup(match)
+		}
+	case 1:
+	case 0:
 	}
 
-	createTransaction(*store, ctx, false)
-	return nil
+	return createTransaction(*store, ctx, false)
 }
 
 func sendCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
@@ -95,6 +108,33 @@ func sendCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sugge
 	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 }
 
+func createExecutor(args []string, store *wallet.WalletStore) error {
+	walletFile := wallet.ReadWallet()
+	ctx := sendContext{}
+
+	switch len(args) {
+	default:
+		fallthrough
+	case 4: // currency
+		ctx.Currency = wallet.Currency(args[3])
+		fallthrough
+	case 3: // amount todo decimal numbers
+		num, _ := strconv.Atoi(args[2])
+		ctx.Value = int64(num)
+		fallthrough
+	case 2:
+		if match, ok := walletFile.PrefixSearch(args[1]); ok {
+			ctx.DstPublic = match
+		} else if hexBytes, err := hex.DecodeString(args[1]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
+			ctx.DstPublic = hexBytes
+		}
+	case 1:
+	case 0:
+	}
+
+	return createTransaction(*store, ctx, true)
+}
+
 func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
 	walletFile := wallet.ReadWallet()
 	suggestions := make([]prompt.Suggest, 0)
@@ -110,32 +150,6 @@ func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sug
 	}
 
 	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
-}
-
-func createExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile := wallet.ReadWallet()
-	ctx := sendContext{}
-
-	if len(args) > 1 && args[0] == "create" {
-		if match, ok := walletFile.PrefixSearch(args[1]); ok {
-			ctx.DstPublic = match
-		} else if hexBytes, err := hex.DecodeString(args[1]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
-			ctx.DstPublic = hexBytes
-		}
-	}
-
-	if len(args) > 2 && args[0] == "create" {
-		// todo decimal numbers a well
-		num, _ := strconv.Atoi(args[2])
-		ctx.Value = int64(num)
-	}
-
-	if len(args) > 3 && args[0] == "create" {
-		ctx.Currency = wallet.Currency(args[3])
-	}
-
-	createTransaction(*store, ctx, true)
-	return nil
 }
 
 var SendCommand = createCommand("send", sendExecutor, sendCompleter)

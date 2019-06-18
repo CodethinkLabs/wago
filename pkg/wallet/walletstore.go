@@ -88,7 +88,7 @@ func (s *WalletStore) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 func (s *WalletStore) Propose(trans transaction) error {
 	log.Printf("prop signature: %x\n", trans.Sig)
 	if !trans.IsVerified() {
-		return fmt.Errorf("invalid signature")
+		return fmt.Errorf("provided signature does not match the public key")
 	}
 
 	var buf bytes.Buffer
