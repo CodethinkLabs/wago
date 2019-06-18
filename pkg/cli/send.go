@@ -150,7 +150,9 @@ func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sug
 func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) error {
 	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
 
-	if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
+	if !create && ctx.SrcPublic == nil {
+		return fmt.Errorf("invalid source address provided")
+	} else if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
 		return fmt.Errorf("private key for address %x is the wrong length", ctx.SrcPublic)
 	} else if create && len(ctx.SrcPrivate) != 0 && len(ctx.SrcPublic) != 0 {
 		// we panic here because the invariant is the fault of the programmer

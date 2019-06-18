@@ -58,9 +58,8 @@ func StoreExecutor(in string, store *wallet.WalletStore) {
 			err := c.executor(args, store)
 			if err != nil {
 				fmt.Printf("Error with previous command: %s\n", err)
-			} else {
-				return
 			}
+			return
 		}
 	}
 
