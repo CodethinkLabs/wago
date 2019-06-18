@@ -22,24 +22,15 @@ type sendContext struct {
 	Currency   wallet.Currency
 }
 
-// creates a transaction and proposes it to the cluster
-// param create: If this flag is specified, the transaction is a "create" command
-// 				 meaning that the currency will be generated from nothing.
-//			     Create commands with a source public or private key will error.
-func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) error {
-	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
+// executes the send command, allowing the user to
+// send currency from one of their wallets to another
+// syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
+var SendCommand = createCommand("send", sendExecutor, sendCompleter)
 
-	if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
-		return fmt.Errorf("private key for address %x is the wrong length", ctx.SrcPublic)
-	} else if create && len(ctx.SrcPrivate) != 0 && len(ctx.SrcPublic) != 0 {
-		// we panic here because the invariant is the fault of the programmer
-		panic(fmt.Errorf("source private or public key passed to create command"))
-	}
-
-	trans.Sign(ctx.SrcPrivate)
-	err := store.Propose(trans)
-	return err // or nil
-}
+// executes the create command, allowing the user to
+// create currency and deposit into the provided wallet
+// syntax: create ${KEY} ${AMOUNT} ${CURRENCY}
+var CreateCommand = createCommand("create", createExecutor, createCompleter)
 
 func sendExecutor(args []string, store *wallet.WalletStore) error {
 	walletFile := wallet.ReadWallet()
@@ -152,5 +143,21 @@ func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sug
 	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 }
 
-var SendCommand = createCommand("send", sendExecutor, sendCompleter)
-var CreateCommand = createCommand("create", createExecutor, createCompleter)
+// creates a transaction and proposes it to the cluster
+// param create: If this flag is specified, the transaction is a "create" command
+// 				 meaning that the currency will be generated from nothing.
+//			     Create commands with a source public or private key will error.
+func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) error {
+	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
+
+	if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
+		return fmt.Errorf("private key for address %x is the wrong length", ctx.SrcPublic)
+	} else if create && len(ctx.SrcPrivate) != 0 && len(ctx.SrcPublic) != 0 {
+		// we panic here because the invariant is the fault of the programmer
+		panic(fmt.Errorf("source private or public key passed to create command"))
+	}
+
+	trans.Sign(ctx.SrcPrivate)
+	err := store.Propose(trans)
+	return err // or nil
+}

@@ -111,26 +111,21 @@ func Authenticate(newPassword *string) {
 	}
 }
 
-func GenerateKeys(args []string) (ed25519.PrivateKey, ed25519.PublicKey) {
+func GenerateKeys(pass *string) (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	var privateKey ed25519.PrivateKey
 	var publicKey ed25519.PublicKey
 	var err error
 
-	switch len(args) {
-	case 0:
+	if pass == nil {
 		publicKey, privateKey, err = ed25519.GenerateKey(nil)
-	case 1:
-		publicKey, privateKey, err = ed25519.GenerateKey(bytes.NewReader(hashPassword(args[0])))
-	default:
-		log.Fatal("Command only supports optional password arg")
+	} else {
+		publicKey, privateKey, err = ed25519.GenerateKey(bytes.NewReader(hashPassword(*pass)))
 	}
-
 	if err != nil {
-		log.Fatal("Bad key")
+		return nil, nil, err
+	} else {
+		return privateKey, publicKey, nil
 	}
-
-	fmt.Printf("Generating new key: %x\n", publicKey[:6])
-	return privateKey, publicKey
 }
 
 func AddKeys(wallet walletfile, publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) walletfile {

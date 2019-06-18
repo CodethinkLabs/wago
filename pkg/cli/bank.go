@@ -8,7 +8,10 @@ import (
 
 // executes the bank command, returning to the user the
 // current balance of all their local wallets
-func bankCommand(args []string, store *wallet.WalletStore) error {
+// syntax: bank [full]
+var BankCommand = createCommand("bank", bankExecutor, nil)
+
+func bankExecutor(args []string, store *wallet.WalletStore) error {
 	walletFile := wallet.ReadWallet()
 	if len(walletFile) == 0 {
 		println("No keys in wallet.")
@@ -32,5 +35,3 @@ func bankCommand(args []string, store *wallet.WalletStore) error {
 
 	return nil
 }
-
-var BankCommand = createCommand("bank", bankCommand, nil)

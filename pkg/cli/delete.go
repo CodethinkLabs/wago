@@ -8,9 +8,14 @@ import (
 	"strings"
 )
 
-func deleteCommand(args []string, store *wallet.WalletStore) error {
-	if len(args) < 2 {
-		return fmt.Errorf("must provide an address")
+// executes the delete command, allowing the user
+// to remove keys from their personal wallet
+// syntax: delete ${PUBLIC_KEY}
+var DeleteCommand = createCommand("delete", deleteExecutor, deleteCompleter)
+
+func deleteExecutor(args []string, store *wallet.WalletStore) error {
+	if len(args) != 2 {
+		return fmt.Errorf("must provide exactly one address")
 	}
 	key := args[1]
 	walletFile := wallet.ReadWallet()
@@ -41,5 +46,3 @@ func deleteCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Sug
 
 	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 }
-
-var DeleteCommand = createCommand("delete", deleteCommand, deleteCompleter)

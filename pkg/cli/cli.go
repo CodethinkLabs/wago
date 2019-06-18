@@ -36,14 +36,14 @@ var commandList = Commands{
 	CreateCommand,
 	NewCommand,
 	AuthCommand,
-	createCommand("exit", func(args []string, w *wallet.WalletStore) error {os.Exit(0); return nil}, nil),
+	createCommand("exit", func(args []string, w *wallet.WalletStore) error { os.Exit(0); return nil }, nil),
 }
 
 // gets a range of suggestions for each command in the list
 func (c Commands) GenerateSuggestions() []prompt.Suggest {
 	var suggestions []prompt.Suggest
 	for _, command := range c {
-		suggestions = append(suggestions, prompt.Suggest{Text: command.name /* todo desc */})
+		suggestions = append(suggestions, prompt.Suggest{Text: command.name /* todo desc */ })
 	}
 	return suggestions
 }
@@ -62,7 +62,7 @@ func StoreExecutor(in string, store *wallet.WalletStore) {
 				return
 			}
 		}
- 	}
+	}
 
 	switch args[0] {
 	case "":
