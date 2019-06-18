@@ -6,11 +6,13 @@ import (
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
 
-func BankCommand(args []string, store *wallet.WalletStore) {
+// executes the bank command, returning to the user the
+// current balance of all their local wallets
+func bankCommand(args []string, store *wallet.WalletStore) error {
 	walletFile := wallet.ReadWallet()
 	if len(walletFile) == 0 {
-		println("No key pair in wallet.")
-		return
+		println("No keys in wallet.")
+		return nil
 	}
 	for _, key := range walletFile {
 		pubKey := key.PublicKey
@@ -27,4 +29,8 @@ func BankCommand(args []string, store *wallet.WalletStore) {
 			fmt.Print(" no currency\n")
 		}
 	}
+
+	return nil
 }
+
+var BankCommand = createCommand("bank", bankCommand, nil)

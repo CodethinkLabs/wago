@@ -33,10 +33,12 @@ func main() {
 	p.Run()
 }
 
+// a wrapper around the cli executor to provide it the store
 func Executor(in string) {
-	cli.EExecutor(in, store)
+	cli.StoreExecutor(in, store)
 }
 
+// a wrapper around the cli completer to provide it the store
 func Completer(in prompt.Document) []prompt.Suggest {
-	return cli.CCompleter(in, store)
+	return cli.StoreCompleter(in, store)
 }

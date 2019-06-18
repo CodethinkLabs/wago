@@ -4,12 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
+	"github.com/c-bata/go-prompt"
 	"strings"
 )
 
-func DeleteCommand(args []string) {
+func deleteCommand(args []string, store *wallet.WalletStore) error {
 	if len(args) < 2 {
-		panic("must provide address")
+		return fmt.Errorf("must provide an address")
 	}
 	key := args[1]
 	walletFile := wallet.ReadWallet()
@@ -23,9 +24,22 @@ func DeleteCommand(args []string) {
 		}
 	}
 	if len(walletFile) == i {
-		println("No keyPair match.")
+		return fmt.Errorf("no matching keys in wallet")
 	} else {
 		walletFile = walletFile[:i]
 	}
 	wallet.WriteWallet(walletFile)
+	return nil
 }
+
+func deleteCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
+	suggestions := make([]prompt.Suggest, 0)
+	walletFile := wallet.ReadWallet()
+	for _, keyPair := range walletFile {
+		suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
+	}
+
+	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
+}
+
+var DeleteCommand = createCommand("delete", deleteCommand, deleteCompleter)

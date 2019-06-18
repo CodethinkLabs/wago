@@ -3,9 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "auth.go",
         "bank.go",
         "cli.go",
         "delete.go",
+        "new.go",
         "send.go",
     ],
     importpath = "github.com/CodethinkLabs/wago/pkg/cli",
