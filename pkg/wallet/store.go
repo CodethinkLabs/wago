@@ -126,10 +126,14 @@ func (s *WalletStore) readCommits(commitC <-chan *string, errorC <-chan error) {
 		if err := dec.Decode(&nextTrans); err != nil {
 			log.Fatalf("raftrade: could not decode message (%v)", err)
 		}
+		if nextTrans.Curr == "" {
+			log.Printf("Dropping transaction with invalid currency")
+			continue
+		}
 
 		if !nextTrans.Create {
 			if !nextTrans.IsVerified() {
-				fmt.Println("Dropping transaction with bad signature")
+				log.Printf("Dropping transaction with bad signature")
 				// discard transactions with invalid signatures
 				continue
 			}
