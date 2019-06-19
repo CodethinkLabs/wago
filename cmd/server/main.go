@@ -79,6 +79,7 @@ func main() {
 		cli.NewCommand,
 		cli.DeleteCommand,
 		cli.AuthCommand,
+		cli.NodeCommand(confChangeC),
 		cli.StatusCommand(stats),
 	}
 

@@ -9,6 +9,7 @@ go_library(
         "command.go",
         "delete.go",
         "new.go",
+        "node.go",
         "send.go",
         "status.go",
     ],
@@ -19,6 +20,7 @@ go_library(
         "//pkg/util:go_default_library",
         "//pkg/wallet:go_default_library",
         "@com_github_c_bata_go_prompt//:go_default_library",
+        "@io_etcd_go_etcd//raft/raftpb:go_default_library",
         "@org_golang_x_crypto//ed25519:go_default_library",
     ],
 )
