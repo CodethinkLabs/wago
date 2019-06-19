@@ -24,6 +24,10 @@ type DecimalAmount struct {
 	Decimal int8
 }
 
+func (d DecimalAmount) String() string {
+	return fmt.Sprintf("%d.%.2d", d.Value, d.Decimal)
+}
+
 type Currency string
 type Currencies map[Currency]DecimalAmount
 
