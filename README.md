@@ -1,9 +1,9 @@
 # WalletGo
 
 Wallet go is a distributed consensus client for trading arbitrary
-currencies between various users via the raft consensus algorithm.
-It is not vetted or secure (at all) from bad actors and should not be
-used in any trust-less system.
+currencies between various users via the [raft consensus algorithm](https://raft.github.io/raft.pdf).
+It is not secure (at all) against malicious actors and should 
+not be used by anyone.
 
 ### Usage:
 
@@ -88,5 +88,26 @@ An example config with 2 nodes:
 
 ```bash
 ./wago --id 1 --cluster http://127.0.0.1:19200,http://127.0.0.1:19201
-./wago --id 2 --cluster http://127.0.0.1:19200,http://127.0.0.1:19201 --join
+./wago --id 2 --cluster http://127.0.0.1:19200,http://127.0.0.1:19201
 ```
+
+### Cryptography
+
+This project uses cryptography to secure the system (on a surface level).
+Currency is organized into wallets which is a ED25519 key pair. ED25519
+is a digital signature scheme which is what proves to the system that a
+transaction truly comes from the source key. When a transaction is sent,
+the sender (source address) signs the concatenation of the 
+`SRC_PUB^DST_PUB^AMOUNT^CURR`. The leader of the cluster, when updating
+the state machine, verifies this signature before authorizing the 
+transaction.
+
+The system is vulnerable to Byzantine faults meaning it has no protection
+against malicious or malfunctioning nodes. Raft, the underlying consensus
+algorithm, only guarantees correctness when all the nodes in the cluster
+are non-Byzantine. This is, for example, observed in the log replication.
+In Raft, the leader has complete responsibility for ensuring logs are
+properly replicated. A malicious node could, for example, intercept
+proposals and while, due to the cryptographic signature, client nodes
+are able to reject invalid transactions and elect a new leader, there
+is no protection against starving the follower nodes of updates.
