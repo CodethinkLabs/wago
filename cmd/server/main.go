@@ -72,7 +72,19 @@ func main() {
 	// initialize the chat store with all the channels
 	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)
 
-	p := prompt.New(Executor, Completer)
+	p := prompt.New(
+		cli.Executor, cli.Completer,
+		prompt.OptionTitle("wago Wallet"),
+		prompt.OptionPrefixTextColor(prompt.White),
+		prompt.OptionSuggestionBGColor(prompt.Purple),
+		prompt.OptionDescriptionBGColor(prompt.White),
+		prompt.OptionDescriptionTextColor(prompt.Purple),
+		prompt.OptionSelectedSuggestionTextColor(prompt.White),
+		prompt.OptionSelectedSuggestionBGColor(prompt.DarkBlue),
+		prompt.OptionSelectedDescriptionBGColor(prompt.Blue),
+		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
+		prompt.OptionPrefix("$ "),
+	)
 	p.Run()
 }
 
