@@ -6,9 +6,9 @@ import "github.com/CodethinkLabs/wago/pkg/wallet"
 // set a password for the current session for
 // encryption and decryption of the wallet file
 // syntax: auth ${OPTIONAL_PASS}
-var AuthCommand = createCommand("auth", authExecutor, nil)
+var AuthCommand = createCommand("auth", "Set the password for the session", authExecutor, nil)
 
-func authExecutor(args []string, store *wallet.WalletStore) error {
+func authExecutor(args []string) error {
 	if len(args) != 2 {
 		wallet.Authenticate(nil)
 	} else {

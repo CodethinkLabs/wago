@@ -11,9 +11,9 @@ import (
 // executes the delete command, allowing the user
 // to remove keys from their personal wallet
 // syntax: delete ${PUBLIC_KEY}
-var DeleteCommand = createCommand("delete", deleteExecutor, deleteCompleter)
+var DeleteCommand = createCommand("delete", "Deletes a key from the local wallet", deleteExecutor, deleteCompleter)
 
-func deleteExecutor(args []string, store *wallet.WalletStore) error {
+func deleteExecutor(args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("must provide exactly one address")
 	}
@@ -41,7 +41,7 @@ func deleteExecutor(args []string, store *wallet.WalletStore) error {
 	return nil
 }
 
-func deleteCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
+func deleteCompleter(in prompt.Document) []prompt.Suggest {
 	suggestions := make([]prompt.Suggest, 0)
 	walletFile, err := wallet.ReadWallet()
 	if err != nil {

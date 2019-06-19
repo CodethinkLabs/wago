@@ -25,135 +25,139 @@ type sendContext struct {
 // executes the send command, allowing the user to
 // send currency from one of their wallets to another
 // syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
-var SendCommand = createCommand("send", sendExecutor, sendCompleter)
+func SendCommand(store *wallet.WalletStore) Command {
+	sendExecutor := func(args []string) error {
+		walletFile, err := wallet.ReadWallet()
+		if err != nil {
+			return err
+		}
+		ctx := sendContext{}
+
+		switch len(args) {
+		default:
+			fallthrough
+		case 5: // currency
+			ctx.Currency = wallet.Currency(args[4])
+			fallthrough
+		case 4: // amount todo decimal numbers a well
+			num, _ := strconv.Atoi(args[3])
+			ctx.Value = int64(num)
+			fallthrough
+		case 3: // dst address
+			if match, ok := store.PrefixSearch(args[2]); ok {
+				ctx.DstPublic = match
+			} else if hexBytes, err := hex.DecodeString(args[2]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
+				ctx.DstPublic = hexBytes
+			}
+			fallthrough
+		case 2: // src address
+			if match, ok := walletFile.PrefixSearch(args[1]); ok {
+				ctx.SrcPublic = match
+				ctx.SrcPrivate = walletFile.Lookup(match)
+			}
+		case 1:
+		case 0:
+		}
+
+		return createTransaction(*store, ctx, false)
+	}
+
+	sendCompleter := func(in prompt.Document) []prompt.Suggest {
+		walletFile, err := wallet.ReadWallet()
+		if err != nil {
+			return []prompt.Suggest{}
+		}
+		suggestions := make([]prompt.Suggest, 0)
+		currentCommand := in.TextBeforeCursor()
+		args := strings.Split(currentCommand, " ")
+
+		switch len(args) {
+		case 2:
+			// src
+			for _, keyPair := range walletFile {
+				suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
+			}
+		case 3:
+			// dst
+			for publicKey := range store.WalletStore {
+				suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(publicKey[:])[:12]})
+			}
+		case 5:
+			// currency
+			sourceKey, _ := hex.DecodeString(args[1])
+			for key := range store.WalletStore {
+				// todo can suggest wrong currencies if keys clash
+				if !bytes.HasPrefix(key[:], sourceKey) {
+					continue
+				}
+				for curr := range store.WalletStore[key] {
+					suggestions = append(suggestions, prompt.Suggest{Text: string(curr)})
+				}
+			}
+		}
+
+		return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
+	}
+
+	return createCommand("send", "Send currency from one of your local wallets", sendExecutor, sendCompleter)
+}
 
 // executes the create command, allowing the user to
 // create currency and deposit into the provided wallet
 // syntax: create ${KEY} ${AMOUNT} ${CURRENCY}
-var CreateCommand = createCommand("create", createExecutor, createCompleter)
-
-func sendExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile, err := wallet.ReadWallet()
-	if err != nil {
-		return err
-	}
-	ctx := sendContext{}
-
-	switch len(args) {
-	default:
-		fallthrough
-	case 5: // currency
-		ctx.Currency = wallet.Currency(args[4])
-		fallthrough
-	case 4: // amount todo decimal numbers a well
-		num, _ := strconv.Atoi(args[3])
-		ctx.Value = int64(num)
-		fallthrough
-	case 3: // dst address
-		if match, ok := store.PrefixSearch(args[2]); ok {
-			ctx.DstPublic = match
-		} else if hexBytes, err := hex.DecodeString(args[2]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
-			ctx.DstPublic = hexBytes
+func CreateCommand(store *wallet.WalletStore) Command {
+	createExecutor := func(args []string) error {
+		walletFile, err := wallet.ReadWallet()
+		if err != nil {
+			return err
 		}
-		fallthrough
-	case 2: // src address
-		if match, ok := walletFile.PrefixSearch(args[1]); ok {
-			ctx.SrcPublic = match
-			ctx.SrcPrivate = walletFile.Lookup(match)
-		}
-	case 1:
-	case 0:
-	}
+		ctx := sendContext{}
 
-	return createTransaction(*store, ctx, false)
-}
-
-func sendCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
-	walletFile, err := wallet.ReadWallet()
-	if err != nil {
-		return []prompt.Suggest{}
-	}
-	suggestions := make([]prompt.Suggest, 0)
-	currentCommand := in.TextBeforeCursor()
-	args := strings.Split(currentCommand, " ")
-
-	switch len(args) {
-	case 2:
-		// src
-		for _, keyPair := range walletFile {
-			suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
-		}
-	case 3:
-		// dst
-		for publicKey := range store.WalletStore {
-			suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(publicKey[:])[:12]})
-		}
-	case 5:
-		// currency
-		sourceKey, _ := hex.DecodeString(args[1])
-		for key := range store.WalletStore {
-			// todo can suggest wrong currencies if keys clash
-			if !bytes.HasPrefix(key[:], sourceKey) {
-				continue
+		switch len(args) {
+		default:
+			fallthrough
+		case 4: // currency
+			ctx.Currency = wallet.Currency(args[3])
+			fallthrough
+		case 3: // amount todo decimal numbers
+			num, _ := strconv.Atoi(args[2])
+			ctx.Value = int64(num)
+			fallthrough
+		case 2:
+			if match, ok := walletFile.PrefixSearch(args[1]); ok {
+				ctx.DstPublic = match
+			} else if hexBytes, err := hex.DecodeString(args[1]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
+				ctx.DstPublic = hexBytes
 			}
-			for curr := range store.WalletStore[key] {
-				suggestions = append(suggestions, prompt.Suggest{Text: string(curr)})
+		case 1:
+		case 0:
+		}
+
+		return createTransaction(*store, ctx, true)
+	}
+
+	createCompleter := func(in prompt.Document) []prompt.Suggest {
+		suggestions := make([]prompt.Suggest, 0)
+
+		walletFile, err := wallet.ReadWallet()
+		if err != nil {
+			return suggestions
+		}
+		currentCommand := in.TextBeforeCursor()
+		args := strings.Split(currentCommand, " ")
+
+		switch len(args) {
+		case 2:
+			// src
+			for _, keyPair := range walletFile {
+				suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
 			}
 		}
+
+		return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 	}
 
-	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
-}
-
-func createExecutor(args []string, store *wallet.WalletStore) error {
-	walletFile, err := wallet.ReadWallet()
-	if err != nil {
-		return err
-	}
-	ctx := sendContext{}
-
-	switch len(args) {
-	default:
-		fallthrough
-	case 4: // currency
-		ctx.Currency = wallet.Currency(args[3])
-		fallthrough
-	case 3: // amount todo decimal numbers
-		num, _ := strconv.Atoi(args[2])
-		ctx.Value = int64(num)
-		fallthrough
-	case 2:
-		if match, ok := walletFile.PrefixSearch(args[1]); ok {
-			ctx.DstPublic = match
-		} else if hexBytes, err := hex.DecodeString(args[1]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
-			ctx.DstPublic = hexBytes
-		}
-	case 1:
-	case 0:
-	}
-
-	return createTransaction(*store, ctx, true)
-}
-
-func createCompleter(in prompt.Document, store *wallet.WalletStore) []prompt.Suggest {
-	suggestions := make([]prompt.Suggest, 0)
-
-	walletFile, err := wallet.ReadWallet()
-	if err != nil {
-		return suggestions
-	}
-	currentCommand := in.TextBeforeCursor()
-	args := strings.Split(currentCommand, " ")
-
-	switch len(args) {
-	case 2:
-		// src
-		for _, keyPair := range walletFile {
-			suggestions = append(suggestions, prompt.Suggest{Text: hex.EncodeToString(keyPair.PublicKey)[:12]})
-		}
-	}
-
-	return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
+	return createCommand("create", "Create currency", createExecutor, createCompleter)
 }
 
 // creates a transaction and proposes it to the cluster

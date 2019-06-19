@@ -6,6 +6,7 @@ go_library(
         "auth.go",
         "bank.go",
         "cli.go",
+        "command.go",
         "delete.go",
         "new.go",
         "send.go",

@@ -72,6 +72,15 @@ func main() {
 	// initialize the chat store with all the channels
 	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)
 
+	cli.CommandList = cli.Commands{
+		cli.BankCommand(store),
+		cli.SendCommand(store),
+		cli.CreateCommand(store),
+		cli.NewCommand,
+		cli.DeleteCommand,
+		cli.AuthCommand,
+	}
+
 	p := prompt.New(
 		cli.Executor, cli.Completer,
 		prompt.OptionTitle("wago Wallet"),
@@ -86,14 +95,4 @@ func main() {
 		prompt.OptionPrefix("$ "),
 	)
 	p.Run()
-}
-
-// a wrapper around the cli executor to provide it the store
-func Executor(in string) {
-	cli.StoreExecutor(in, store)
-}
-
-// a wrapper around the cli completer to provide it the store
-func Completer(in prompt.Document) []prompt.Suggest {
-	return cli.StoreCompleter(in, store)
 }

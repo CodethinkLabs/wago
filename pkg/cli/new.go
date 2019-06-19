@@ -10,9 +10,9 @@ import (
 // executes the new command, allowing the user to
 // generate new keypairs for use in the system
 // syntax: new ${OPTIONAL MULTI-WORD SEED}
-var NewCommand = createCommand("new", newCommand, nil)
+var NewCommand = createCommand("new", "Creates a new local wallet", newCommand, nil)
 
-func newCommand(args []string, store *wallet.WalletStore) error {
+func newCommand(args []string) error {
 	var privateKey ed25519.PrivateKey
 	var publicKey ed25519.PublicKey
 	var err error
