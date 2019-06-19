@@ -77,6 +77,7 @@ type raftNode struct {
 var defaultSnapshotCount uint64 = 10000
 
 var Log = log.New(os.Stdout, "wagoraft: ", 0)
+var ZapLog = zap.NewExample()
 
 // newRaftNode initiates a raft instance and returns a committed log entry
 // channel and error channel. Proposals for log updates are sent over the
@@ -220,7 +221,7 @@ func (rc *raftNode) openWAL(snapshot *raftpb.Snapshot) *wal.WAL {
 			Log.Fatalf("raftrade: cannot create dir for wal (%v)", err)
 		}
 
-		w, err := wal.Create(zap.NewExample(), rc.waldir, nil)
+		w, err := wal.Create(ZapLog, rc.waldir, nil)
 		if err != nil {
 			Log.Fatalf("raftrade: create wal error (%v)", err)
 		}
@@ -232,7 +233,7 @@ func (rc *raftNode) openWAL(snapshot *raftpb.Snapshot) *wal.WAL {
 		walsnap.Index, walsnap.Term = snapshot.Metadata.Index, snapshot.Metadata.Term
 	}
 	Log.Printf("loading WAL at term %d and index %d", walsnap.Term, walsnap.Index)
-	w, err := wal.Open(zap.NewExample(), rc.waldir, walsnap)
+	w, err := wal.Open(ZapLog, rc.waldir, walsnap)
 	if err != nil {
 		Log.Fatalf("raftrade: error loading wal (%v)", err)
 	}
@@ -280,7 +281,7 @@ func (rc *raftNode) startRaft() {
 			Log.Fatalf("raftrade: cannot create dir for snapshot (%v)", err)
 		}
 	}
-	rc.snapshotter = snap.New(zap.NewExample(), rc.snapdir)
+	rc.snapshotter = snap.New(ZapLog, rc.snapdir)
 	rc.snapshotterReady <- rc.snapshotter
 
 	oldwal := wal.Exist(rc.waldir)
@@ -311,7 +312,7 @@ func (rc *raftNode) startRaft() {
 	}
 
 	rc.transport = &rafthttp.Transport{
-		Logger:      zap.NewExample(),
+		Logger:      ZapLog,
 		ID:          types.ID(rc.id),
 		ClusterID:   0x1000,
 		Raft:        rc,

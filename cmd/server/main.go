@@ -22,6 +22,8 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 var store *wallet.WalletStore
@@ -31,6 +33,26 @@ func init() {
 	discard := log.New(ioutil.Discard, "", 0)
 	etcdRaft.SetLogger(&etcdRaft.DefaultLogger{Logger: discard})
 	wagoRaft.Log = discard
+
+	// raft zap logger
+	prodZapLog, err := zap.Config{
+		Level: zap.NewAtomicLevelAt(zap.ErrorLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}.Build()
+
+	if err != nil {
+		panic(err)
+	}
+
+	wagoRaft.ZapLog = prodZapLog
 }
 
 func main() {
