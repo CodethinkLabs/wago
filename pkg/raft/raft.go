@@ -96,7 +96,7 @@ var ZapLog = zap.NewExample()
 //   - A channel for errors
 //   - A channel to signal when the snapshotter is ready
 func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, error), proposeC <-chan string,
-	confChangeC <-chan raftpb.ConfChange) (<-chan *string, <-chan error, <-chan *snap.Snapshotter) {
+	confChangeC <-chan raftpb.ConfChange) (<-chan *string, <-chan error, <-chan *snap.Snapshotter, func() (RaftStatus, error)) {
 
 	commitC := make(chan *string)
 	errorC := make(chan error)
@@ -122,7 +122,40 @@ func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, 
 	}
 
 	go rc.startRaft()
-	return commitC, errorC, rc.snapshotterReady
+	return commitC, errorC, rc.snapshotterReady, status(rc)
+}
+
+type RaftStatus struct {
+	ID              types.ID // this node's ID in the cluster
+	Nodes           []uint64 // an array of all the node IDs
+	ActiveNodeCount int      // the number of active nodes
+	ActiveNodes     []uint64
+}
+
+// a higher order function that returns the server
+// stats for a given function
+func status(rc *raftNode) func() (RaftStatus, error) {
+	zeroTime := time.Time{}
+
+	return func() (RaftStatus, error) {
+		if rc.transport == nil {
+			return RaftStatus{}, fmt.Errorf("transport not initialized")
+		} else {
+			activeNodes := make([]uint64, 0)
+			for _, nodeId := range rc.confState.Nodes {
+				if rc.transport.ActiveSince(types.ID(nodeId)) != zeroTime {
+					activeNodes = append(activeNodes, nodeId)
+				}
+			}
+
+			return RaftStatus{
+				Nodes:           rc.confState.Nodes,
+				ID:              rc.transport.ID,
+				ActiveNodeCount: rc.transport.ActivePeers(),
+				ActiveNodes:     activeNodes,
+			}, nil
+		}
+	}
 }
 
 func (rc *raftNode) saveSnap(snap raftpb.Snapshot) error {

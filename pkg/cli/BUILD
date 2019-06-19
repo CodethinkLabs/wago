@@ -10,10 +10,12 @@ go_library(
         "delete.go",
         "new.go",
         "send.go",
+        "status.go",
     ],
     importpath = "github.com/CodethinkLabs/wago/pkg/cli",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/raft:go_default_library",
         "//pkg/util:go_default_library",
         "//pkg/wallet:go_default_library",
         "@com_github_c_bata_go_prompt//:go_default_library",
