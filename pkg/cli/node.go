@@ -33,10 +33,19 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange) Command {
 		return nil
 	}
 
-	nodeDeleteExecutor := func(i []string) error {
+	nodeDeleteExecutor := func(args []string) error {
+		if len(args) != 2 {
+			return fmt.Errorf("command takes exactly ${ID}")
+		}
+
+		nodeId, err := strconv.ParseUint(args[1], 0, 64)
+		if err != nil {
+			return fmt.Errorf("node id not a valid integer")
+		}
+
 		cc := raftpb.ConfChange{
-			Type:    raftpb.ConfChangeRemoveNode,
-			NodeID:  1/*todo*/,
+			Type:   raftpb.ConfChangeRemoveNode,
+			NodeID: nodeId,
 		}
 		confChangeC <- cc
 		return nil
