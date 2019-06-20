@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-var subCommands Commands
-
 // executes the node command, allowing members
 // of the cluster to add and remove nodes
 func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.RaftStatus, error)) Command {
@@ -64,41 +62,41 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 
 		return suggestions
 	}
-	subCommands = Commands{
+
+	subCommands := Commands{
 		createCommand("create", "Add a node to the cluster", nodeCreateExecutor, nil),
 		createCommand("delete", "Delete a node from the cluster", nodeDeleteExecutor, nodeDeleteCompleter),
 	}
 
+	nodeExecutor := func(args []string) error {
+		if len(args) > 1 {
+			subCommand, err := subCommands.Match(args[1])
+			if err == nil {
+				return subCommand.executor(args[1:])
+			}
+		}
+		subCommands.GenerateHelp("Available subcommands:")
+		return nil
+	}
+
+	nodeCompleter := func(in prompt.Document) []prompt.Suggest {
+		currentCommand := in.TextBeforeCursor()
+		args := strings.Split(currentCommand, " ")
+
+		var subCommand Command
+		if len(args) > 1 {
+			var err error
+			subCommand, err = subCommands.Match(args[1])
+			if err != nil {
+				return subCommands.GenerateSuggestions()
+			}
+		}
+		if len(args) > 2 && subCommand.completer != nil {
+			return subCommand.completer(in)
+		}
+
+		return []prompt.Suggest{}
+	}
+
 	return createCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
-}
-
-func nodeExecutor(args []string) error {
-
-	if len(args) > 1 {
-		subCommand, err := subCommands.Match(args[1])
-		if err == nil {
-			return subCommand.executor(args[1:])
-		}
-	}
-	subCommands.GenerateHelp("Available subcommands:")
-	return nil
-}
-
-func nodeCompleter(in prompt.Document) []prompt.Suggest {
-	currentCommand := in.TextBeforeCursor()
-	args := strings.Split(currentCommand, " ")
-
-	var subCommand Command
-	if len(args) > 1 {
-		var err error
-		subCommand, err = subCommands.Match(args[1])
-		if err != nil {
-			return subCommands.GenerateSuggestions()
-		}
-	}
-	if len(args) > 2 && subCommand.completer != nil {
-		return subCommand.completer(in)
-	}
-
-	return []prompt.Suggest{}
 }
