@@ -11,48 +11,54 @@ import (
 	"strings"
 )
 
-// all the commands in the CLI
-var CommandList Commands
+// provided a list of commands, generates a completer
+// and executor to run those commands
+func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) []prompt.Suggest) {
+	// iterates through each registered command until it
+	// finds a match and runs its executor
 
-// iterates through each registered command until it
-// finds a match and runs its executor
-func Executor(in string) {
-	in = strings.TrimSpace(in)
-	args := strings.Split(in, " ")
-	command, err := CommandList.Match(args[0])
+	var commandList Commands = commands
 
-	if err == nil {
-		err := command.executor(args)
-		if err != nil {
-			fmt.Printf("Error with previous command: %s\n", err)
+	executor := func(in string) {
+		in = strings.TrimSpace(in)
+		args := strings.Split(in, " ")
+		command, err := commandList.Match(args[0])
+
+		if err == nil {
+			err := command.executor(args)
+			if err != nil {
+				fmt.Printf("Error with previous command: %s\n", err)
+			}
+			return
 		}
-		return
+
+		switch args[0] {
+		case "":
+		case "help":
+			commandList.GenerateHelp("Available commands:")
+		case "exit":
+			os.Exit(0)
+		default:
+			fmt.Println("Sorry, I don't understand.")
+		}
 	}
 
-	switch args[0] {
-	case "":
-	case "help":
-		CommandList.GenerateHelp("Available commands:")
-	case "exit":
-		os.Exit(0)
-	default:
-		fmt.Println("Sorry, I don't understand.")
+	// iterates through each registered command until it
+	// finds a match and runs its completer
+	completer := func(in prompt.Document) []prompt.Suggest {
+		currentCommand := in.TextBeforeCursor()
+		args := strings.Split(currentCommand, " ")
+		match, err := commandList.Match(args[0])
+		if err != nil {
+			suggestions := commandList.GenerateSuggestions()
+			return prompt.FilterHasPrefix(suggestions, in.GetWordBeforeCursor(), true)
+		}
+		if match.completer != nil {
+			return match.completer(in)
+		} else {
+			return []prompt.Suggest{}
+		}
 	}
-}
 
-// iterates through each registered command until it
-// finds a match and runs its completer
-func Completer(in prompt.Document) []prompt.Suggest {
-	currentCommand := in.TextBeforeCursor()
-	args := strings.Split(currentCommand, " ")
-	match, err := CommandList.Match(args[0])
-	if err != nil {
-		suggestions := CommandList.GenerateSuggestions()
-		return prompt.FilterHasPrefix(suggestions, in.GetWordBeforeCursor(), true)
-	}
-	if match.completer != nil {
-		return match.completer(in)
-	} else {
-		return []prompt.Suggest{}
-	}
+	return executor, completer
 }

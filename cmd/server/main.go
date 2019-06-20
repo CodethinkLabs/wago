@@ -13,6 +13,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
@@ -72,7 +73,7 @@ func main() {
 	// initialize the chat store with all the channels
 	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)
 
-	cli.CommandList = cli.Commands{
+	executor, completer := cli.CreateCLI(
 		cli.BankCommand(store),
 		cli.SendCommand(store),
 		cli.CreateCommand(store),
@@ -81,10 +82,11 @@ func main() {
 		cli.AuthCommand,
 		cli.NodeCommand(confChangeC),
 		cli.StatusCommand(stats),
-	}
+	)
 
+	fmt.Println("Welcome to wago.")
 	p := prompt.New(
-		cli.Executor, cli.Completer,
+		executor, completer,
 		prompt.OptionTitle("wago Wallet"),
 		prompt.OptionPrefixTextColor(prompt.White),
 		prompt.OptionSuggestionBGColor(prompt.Purple),
