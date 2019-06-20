@@ -409,11 +409,11 @@ func (rc *raftNode) maybeTriggerSnapshot() {
 	if err != nil {
 		Log.Panic(err)
 	}
-	snap, err := rc.raftStorage.CreateSnapshot(rc.appliedIndex, &rc.confState, data)
+	s, err := rc.raftStorage.CreateSnapshot(rc.appliedIndex, &rc.confState, data)
 	if err != nil {
 		panic(err)
 	}
-	if err := rc.saveSnap(snap); err != nil {
+	if err := rc.saveSnap(s); err != nil {
 		panic(err)
 	}
 
@@ -430,13 +430,13 @@ func (rc *raftNode) maybeTriggerSnapshot() {
 }
 
 func (rc *raftNode) serveChannels() {
-	snap, err := rc.raftStorage.Snapshot()
+	s, err := rc.raftStorage.Snapshot()
 	if err != nil {
 		panic(err)
 	}
-	rc.confState = snap.Metadata.ConfState
-	rc.snapshotIndex = snap.Metadata.Index
-	rc.appliedIndex = snap.Metadata.Index
+	rc.confState = s.Metadata.ConfState
+	rc.snapshotIndex = s.Metadata.Index
+	rc.appliedIndex = s.Metadata.Index
 
 	defer rc.wal.Close()
 
@@ -506,12 +506,12 @@ func (rc *raftNode) serveChannels() {
 }
 
 func (rc *raftNode) serveRaft() {
-	url, err := url.Parse(rc.peers[rc.id-1])
+	u, err := url.Parse(rc.peers[rc.id-1])
 	if err != nil {
 		Log.Fatalf("raftrade: Failed parsing URL (%v)", err)
 	}
 
-	ln, err := newStoppableListener(url.Host, rc.httpstopc)
+	ln, err := newStoppableListener(u.Host, rc.httpstopc)
 	if err != nil {
 		Log.Fatalf("raftrade: Failed to listen rafthttp (%v)", err)
 	}

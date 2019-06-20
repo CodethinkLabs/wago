@@ -13,7 +13,6 @@ type Command struct {
 	completer   func(prompt.Document) []prompt.Suggest
 }
 
-
 type Commands []Command
 
 // creates a new command with a given name
@@ -46,5 +45,3 @@ func (c Commands) GenerateHelp(explanationText string) {
 		fmt.Printf(" - %s: %s\n", sug.Text, sug.Description)
 	}
 }
-
-

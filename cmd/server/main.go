@@ -37,7 +37,7 @@ func init() {
 
 	// raft zap logger
 	prodZapLog, err := zap.Config{
-		Level: zap.NewAtomicLevelAt(zap.ErrorLevel),
+		Level:       zap.NewAtomicLevelAt(zap.ErrorLevel),
 		Development: false,
 		Sampling: &zap.SamplingConfig{
 			Initial:    100,
