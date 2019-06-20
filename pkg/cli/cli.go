@@ -14,11 +14,11 @@ import (
 // provided a list of commands, generates a completer
 // and executor to run those commands
 func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) []prompt.Suggest) {
-	// iterates through each registered command until it
-	// finds a match and runs its executor
 
 	var commandList Commands = commands
 
+	// iterates through each registered command until it
+	// finds a match and runs its executor
 	executor := func(in string) {
 		in = strings.TrimSpace(in)
 		args := strings.Split(in, " ")
