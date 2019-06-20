@@ -9,7 +9,7 @@ import (
 // executes the bank command, returning to the user the
 // current balance of all their local wallets
 // syntax: bank [full]
-func BankCommand(store *wallet.WalletStore) Command {
+func BankCommand(store *wallet.Store) Command {
 	bankExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {

@@ -25,7 +25,7 @@ type sendContext struct {
 // executes the send command, allowing the user to
 // send currency from one of their wallets to another
 // syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
-func SendCommand(store *wallet.WalletStore) Command {
+func SendCommand(store *wallet.Store) Command {
 	sendExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
@@ -39,7 +39,7 @@ func SendCommand(store *wallet.WalletStore) Command {
 		case 5: // currency
 			ctx.Currency = wallet.Currency(args[4])
 			fallthrough
-		case 4: // amount todo decimal numbers a well
+		case 4: // amount todo(arlyon) decimal numbers a well
 			num, _ := strconv.Atoi(args[3])
 			ctx.Value = int64(num)
 			fallthrough
@@ -86,7 +86,7 @@ func SendCommand(store *wallet.WalletStore) Command {
 			// currency
 			sourceKey, _ := hex.DecodeString(args[1])
 			for key := range store.WalletStore {
-				// todo can suggest wrong currencies if keys clash
+				// todo(arlyon) can suggest wrong currencies if keys clash
 				if !bytes.HasPrefix(key[:], sourceKey) {
 					continue
 				}
@@ -105,7 +105,7 @@ func SendCommand(store *wallet.WalletStore) Command {
 // executes the create command, allowing the user to
 // create currency and deposit into the provided wallet
 // syntax: create ${KEY} ${AMOUNT} ${CURRENCY}
-func CreateCommand(store *wallet.WalletStore) Command {
+func CreateCommand(store *wallet.Store) Command {
 	createExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
@@ -119,7 +119,7 @@ func CreateCommand(store *wallet.WalletStore) Command {
 		case 4: // currency
 			ctx.Currency = wallet.Currency(args[3])
 			fallthrough
-		case 3: // amount todo decimal numbers
+		case 3: // amount todo(arlyon) decimal numbers
 			num, _ := strconv.Atoi(args[2])
 			ctx.Value = int64(num)
 			fallthrough
@@ -164,7 +164,7 @@ func CreateCommand(store *wallet.WalletStore) Command {
 // param create: If this flag is specified, the transaction is a "create" command
 // 				 meaning that the currency will be generated from nothing.
 //			     Create commands with a source public or private key will error.
-func createTransaction(store wallet.WalletStore, ctx sendContext, create bool) error {
+func createTransaction(store wallet.Store, ctx sendContext, create bool) error {
 	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
 
 	if !create && ctx.SrcPublic == nil {

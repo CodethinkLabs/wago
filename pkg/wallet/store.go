@@ -1,4 +1,4 @@
-// walletstore is a raft-backed decimalAmount store
+// store is a raft-backed decimalAmount store
 // that associates ED25519 keys with a wallet
 // currencies that users can exchange with
 // each other
@@ -32,7 +32,7 @@ type Currency string
 type Currencies map[Currency]DecimalAmount
 
 // a key-value store backed by raft
-type WalletStore struct {
+type Store struct {
 	proposeC    chan<- string // channel for proposing updates
 	mu          sync.RWMutex
 	WalletStore map[[ed25519.PublicKeySize]byte]Currencies // current wallets
@@ -48,15 +48,15 @@ type transaction struct {
 	Create bool
 }
 
-func NewWalletStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *WalletStore {
-	s := &WalletStore{proposeC: proposeC, WalletStore: make(map[[32]byte]Currencies), snapshotter: snapshotter}
+func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *Store {
+	s := &Store{proposeC: proposeC, WalletStore: make(map[[32]byte]Currencies), snapshotter: snapshotter}
 	s.readCommits(commitC, errorC)
 	go s.readCommits(commitC, errorC)
 	return s
 }
 
 // retrieves the currencies for a given public key
-func (s *WalletStore) Lookup(key ed25519.PublicKey) (Currencies, bool) {
+func (s *Store) Lookup(key ed25519.PublicKey) (Currencies, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.WalletStore[util.ToBytes(key)]
@@ -64,7 +64,7 @@ func (s *WalletStore) Lookup(key ed25519.PublicKey) (Currencies, bool) {
 }
 
 // gets a unique public key from the store by its prefix
-func (s *WalletStore) PrefixSearch(key string) (ed25519.PublicKey, bool) {
+func (s *Store) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 	matches := make([]ed25519.PublicKey, 0)
 
 	for storeKey := range s.WalletStore {
@@ -89,7 +89,7 @@ func (s *WalletStore) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 //
 // performs a simple crypto check to make sure the transaction is
 // signed by the src address
-func (s *WalletStore) Propose(trans transaction) error {
+func (s *Store) Propose(trans transaction) error {
 	log.Printf("prop signature: %x\n", trans.Sig)
 	if !trans.IsVerified() {
 		return fmt.Errorf("provided signature does not match the public key")
@@ -106,7 +106,7 @@ func (s *WalletStore) Propose(trans transaction) error {
 
 // for each previous commit in the channel,
 // apply it to the local state machine
-func (s *WalletStore) readCommits(commitC <-chan *string, errorC <-chan error) {
+func (s *Store) readCommits(commitC <-chan *string, errorC <-chan error) {
 	for data := range commitC {
 		if data == nil {
 			// done replaying log; new data incoming
@@ -179,13 +179,13 @@ func (s *WalletStore) readCommits(commitC <-chan *string, errorC <-chan error) {
 	}
 }
 
-func (s *WalletStore) GetSnapshot() ([]byte, error) {
+func (s *Store) GetSnapshot() ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return json.Marshal(s.WalletStore)
 }
 
-func (s *WalletStore) recoverFromSnapshot(snapshot []byte) error {
+func (s *Store) recoverFromSnapshot(snapshot []byte) error {
 	var store map[[ed25519.PublicKeySize]byte]Currencies
 	if err := json.Unmarshal(snapshot, &store); err != nil {
 		return err

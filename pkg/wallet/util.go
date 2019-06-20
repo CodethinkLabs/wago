@@ -115,7 +115,7 @@ func (t *transaction) Sign(key ed25519.PrivateKey) {
 
 // returns true if the wallet belonging to key
 // has more of the given decimalAmount than requestedAmount
-func (s *WalletStore) CheckBalance(key ed25519.PublicKey, curr Currency, amount DecimalAmount) error {
+func (s *Store) CheckBalance(key ed25519.PublicKey, curr Currency, amount DecimalAmount) error {
 	wallet, ok := s.Lookup(key)
 	if !ok {
 		return fmt.Errorf("wallet does not exist")
