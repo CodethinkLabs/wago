@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/c-bata/go-prompt"
 	"go.etcd.io/etcd/raft/raftpb"
 	"strconv"
@@ -12,7 +13,7 @@ var subCommands Commands
 
 // executes the node command, allowing members
 // of the cluster to add and remove nodes
-func NodeCommand(confChangeC chan<- raftpb.ConfChange) Command {
+func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.RaftStatus, error)) Command {
 	nodeCreateExecutor := func(args []string) error {
 		if len(args) != 3 {
 			return fmt.Errorf("command takes exactly ${ID} ${URL}")
@@ -52,8 +53,16 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange) Command {
 	}
 
 	nodeDeleteCompleter := func(in prompt.Document) []prompt.Suggest {
-		// todo autocomplete a delete
-		return []prompt.Suggest{{Text: "1"}}
+		var suggestions []prompt.Suggest
+
+		status, err := statusGetter()
+		if err == nil {
+			for _, nodeId := range status.Nodes {
+				suggestions = append(suggestions, prompt.Suggest{Text: fmt.Sprint(nodeId)})
+			}
+		}
+
+		return suggestions
 	}
 	subCommands = Commands{
 		createCommand("create", "Add a node to the cluster", nodeCreateExecutor, nil),

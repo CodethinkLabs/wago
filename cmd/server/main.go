@@ -68,7 +68,7 @@ func main() {
 	defer close(confChangeC)
 
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
-	commitC, errorC, snapshotterReady, stats := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, store.GetSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, store.GetSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
 	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)
@@ -80,8 +80,8 @@ func main() {
 		cli.NewCommand,
 		cli.DeleteCommand,
 		cli.AuthCommand,
-		cli.NodeCommand(confChangeC),
-		cli.StatusCommand(stats),
+		cli.NodeCommand(confChangeC, statusGetter),
+		cli.StatusCommand(statusGetter),
 	)
 
 	fmt.Println("Welcome to wago.")
