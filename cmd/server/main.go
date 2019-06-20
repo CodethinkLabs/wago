@@ -23,38 +23,10 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"syscall"
 
 	"go.uber.org/zap"
 )
-
-var store *wallet.WalletStore
-
-// disable logging to stdout
-func init() {
-	discard := log.New(ioutil.Discard, "", 0)
-	etcdRaft.SetLogger(&etcdRaft.DefaultLogger{Logger: discard})
-	wagoRaft.Log = discard
-
-	// raft zap logger
-	prodZapLog, err := zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.ErrorLevel),
-		Development: false,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding:         "json",
-		EncoderConfig:    zap.NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-	}.Build()
-
-	if err != nil {
-		panic(err)
-	}
-
-	wagoRaft.ZapLog = prodZapLog
-}
 
 func main() {
 	cluster := flag.String("cluster", "http://127.0.0.1:9020", "comma separated cluster peers")
@@ -67,23 +39,47 @@ func main() {
 	defer close(proposeC)
 	defer close(confChangeC)
 
+	var store *wallet.Store
+	getSnapshot := func() ([]byte, error) { return store.GetSnapshot() }
+
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
-	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, store.GetSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
-	store = wallet.NewWalletStore(<-snapshotterReady, proposeC, commitC, errorC)
+	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC)
 
-	executor, completer := cli.CreateCLI(
-		cli.BankCommand(store),
-		cli.SendCommand(store),
-		cli.CreateCommand(store),
-		cli.NewCommand,
-		cli.DeleteCommand,
-		cli.AuthCommand,
-		cli.NodeCommand(confChangeC, statusGetter),
-		cli.StatusCommand(statusGetter),
-	)
+	// if we have access to a tty, start the CLI
+	if hasTTY() {
+		executor, completer := cli.CreateCLI(
+			cli.BankCommand(store),
+			cli.SendCommand(store),
+			cli.CreateCommand(store),
+			cli.NewCommand,
+			cli.DeleteCommand,
+			cli.AuthCommand,
+			cli.NodeCommand(confChangeC, statusGetter),
+			cli.StatusCommand(statusGetter),
+		)
 
+		startCLI(executor, completer)
+	}
+}
+
+func init() {
+	disableLogging()
+}
+
+func hasTTY() bool {
+	in, err := syscall.Open("/dev/tty", syscall.O_RDONLY, 0)
+	if  err != nil {
+		return false
+	} else {
+		syscall.Close(in)
+		return true
+	}
+}
+
+func startCLI(executor func(in string), completer func(in prompt.Document) []prompt.Suggest) {
 	fmt.Println("Welcome to wago.")
 	p := prompt.New(
 		executor, completer,
@@ -99,4 +95,27 @@ func main() {
 		prompt.OptionPrefix("$ "),
 	)
 	p.Run()
+}
+
+func disableLogging() {
+	discard := log.New(ioutil.Discard, "", 0)
+	etcdRaft.SetLogger(&etcdRaft.DefaultLogger{Logger: discard})
+	wagoRaft.Log = discard
+	// raft zap logger
+	prodZapLog, err := zap.Config{
+		Level:       zap.NewAtomicLevelAt(zap.ErrorLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+	}.Build()
+	if err != nil {
+		panic(err)
+	}
+	wagoRaft.ZapLog = prodZapLog
 }
