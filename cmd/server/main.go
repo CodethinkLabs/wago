@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
+	"sync"
 	"syscall"
 
 	"go.uber.org/zap"
@@ -43,31 +44,38 @@ func main() {
 	getSnapshot := func() ([]byte, error) { return store.GetSnapshot() }
 
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
-	// this starts many goroutines
+	// this starts many goroutines+-
 	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
 	// this starts a goroutine
-	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC, wg)
 
-	// if we have access to a tty, start the CLI
 	if hasTTY() {
-		executor, completer := cli.CreateCLI(
-			cli.BankCommand(store),
-			cli.SendCommand(store),
-			cli.CreateCommand(store),
-			cli.NewCommand,
-			cli.DeleteCommand,
-			cli.AuthCommand,
-			cli.NodeCommand(confChangeC, statusGetter),
-			cli.StatusCommand(statusGetter),
-		)
-
-		startCLI(executor, completer)
+		// if we have access to a tty, start the CLI
+		// run in a goroutine so that if raft closes, the CLI exits
+		go func() {
+			executor, completer := cli.CreateCLI(
+				cli.BankCommand(store),
+				cli.SendCommand(store),
+				cli.CreateCommand(store),
+				cli.NewCommand,
+				cli.DeleteCommand,
+				cli.AuthCommand,
+				cli.NodeCommand(confChangeC, statusGetter),
+				cli.StatusCommand(statusGetter),
+			)
+			startCLI(executor, completer)
+		}()
 	} else {
+		// else just start in "headless mode"
 		fmt.Println("Starting in headless mode.")
-		// do some sync
 	}
+
+	wg.Wait()
+	fmt.Println("Raft closed. Goodbye.")
 }
 
 func init() {
@@ -76,7 +84,7 @@ func init() {
 
 func hasTTY() bool {
 	in, err := syscall.Open("/dev/tty", syscall.O_RDONLY, 0)
-	if  err != nil {
+	if err != nil {
 		return false
 	} else {
 		syscall.Close(in)

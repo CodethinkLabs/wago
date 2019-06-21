@@ -48,10 +48,19 @@ type transaction struct {
 	Create bool
 }
 
-func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *Store {
+// creates a new store to hold currencies
+// param snapshotter:
+// param proposeC:
+// param commitC:
+// param errorC:
+// param wg: A wait group that is done when the store goroutine ends (ie. when raft has terminated)
+func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error, wg sync.WaitGroup) *Store {
 	s := &Store{proposeC: proposeC, WalletStore: make(map[[32]byte]Currencies), snapshotter: snapshotter}
 	s.readCommits(commitC, errorC)
-	go s.readCommits(commitC, errorC)
+	go func() {
+		s.readCommits(commitC, errorC)
+		wg.Done()
+	}()
 	return s
 }
 
