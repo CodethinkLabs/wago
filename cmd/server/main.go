@@ -43,9 +43,11 @@ func main() {
 	getSnapshot := func() ([]byte, error) { return store.GetSnapshot() }
 
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
+	// this starts many goroutines
 	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
+	// this starts a goroutine
 	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC)
 
 	// if we have access to a tty, start the CLI
@@ -62,6 +64,9 @@ func main() {
 		)
 
 		startCLI(executor, completer)
+	} else {
+		fmt.Println("Starting in headless mode.")
+		// do some sync
 	}
 }
 
