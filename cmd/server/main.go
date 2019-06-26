@@ -17,7 +17,6 @@ import (
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
-	"github.com/c-bata/go-prompt"
 	etcdRaft "go.etcd.io/etcd/raft"
 	"go.etcd.io/etcd/raft/raftpb"
 	"io/ioutil"
@@ -58,16 +57,16 @@ func main() {
 		// run in a goroutine so that if raft closes, the CLI exits
 		go func() {
 			executor, completer := cli.CreateCLI(
-				cli.BankCommand(store),
-				cli.SendCommand(store),
-				cli.CreateCommand(store),
-				cli.NewCommand,
-				cli.DeleteCommand,
-				cli.AuthCommand,
-				cli.NodeCommand(confChangeC, statusGetter),
-				cli.StatusCommand(statusGetter),
+				server.BankCommand(store),
+				server.SendCommand(store),
+				server.CreateCommand(store),
+				common.NewCommand,
+				common.DeleteCommand,
+				common.AuthCommand,
+				server.NodeCommand(confChangeC, statusGetter),
+				server.StatusCommand(statusGetter),
 			)
-			startCLI(executor, completer)
+			cli.StartCLI(executor, completer)
 		}()
 	} else {
 		// else just start in "headless mode"
@@ -90,24 +89,6 @@ func hasTTY() bool {
 		syscall.Close(in)
 		return true
 	}
-}
-
-func startCLI(executor func(in string), completer func(in prompt.Document) []prompt.Suggest) {
-	fmt.Println("Welcome to wago.")
-	p := prompt.New(
-		executor, completer,
-		prompt.OptionTitle("wago Wallet"),
-		prompt.OptionPrefixTextColor(prompt.White),
-		prompt.OptionSuggestionBGColor(prompt.Purple),
-		prompt.OptionDescriptionBGColor(prompt.White),
-		prompt.OptionDescriptionTextColor(prompt.Purple),
-		prompt.OptionSelectedSuggestionTextColor(prompt.White),
-		prompt.OptionSelectedSuggestionBGColor(prompt.DarkBlue),
-		prompt.OptionSelectedDescriptionBGColor(prompt.Blue),
-		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
-		prompt.OptionPrefix("$ "),
-	)
-	p.Run()
 }
 
 func disableLogging() {

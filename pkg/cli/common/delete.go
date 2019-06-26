@@ -1,8 +1,9 @@
-package cli
+package common
 
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // executes the delete command, allowing the user
 // to remove keys from their personal wallet
 // syntax: delete ${PUBLIC_KEY}
-var DeleteCommand = createCommand("delete", "Deletes a key from the local wallet", deleteExecutor, deleteCompleter)
+var DeleteCommand = cli.CreateCommand("delete", "Deletes a key from the local wallet", deleteExecutor, deleteCompleter)
 
 func deleteExecutor(args []string) error {
 	if len(args) != 2 {

@@ -1,9 +1,10 @@
-package cli
+package server
 
 import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"golang.org/x/crypto/ed25519"
@@ -25,7 +26,7 @@ type sendContext struct {
 // executes the send command, allowing the user to
 // send currency from one of their wallets to another
 // syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
-func SendCommand(store *wallet.Store) Command {
+func SendCommand(store *wallet.Store) cli.Command {
 	sendExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
@@ -99,13 +100,13 @@ func SendCommand(store *wallet.Store) Command {
 		return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 	}
 
-	return createCommand("send", "Send currency from one of your local wallets", sendExecutor, sendCompleter)
+	return cli.CreateCommand("send", "Send currency from one of your local wallets", sendExecutor, sendCompleter)
 }
 
 // executes the create command, allowing the user to
 // create currency and deposit into the provided wallet
 // syntax: create ${KEY} ${AMOUNT} ${CURRENCY}
-func CreateCommand(store *wallet.Store) Command {
+func CreateCommand(store *wallet.Store) cli.Command {
 	createExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
@@ -157,7 +158,7 @@ func CreateCommand(store *wallet.Store) Command {
 		return prompt.FilterFuzzy(suggestions, in.GetWordBeforeCursor(), true)
 	}
 
-	return createCommand("create", "Create currency", createExecutor, createCompleter)
+	return cli.CreateCommand("create", "Create currency", createExecutor, createCompleter)
 }
 
 // creates a transaction and proposes it to the cluster

@@ -1,11 +1,12 @@
-package cli
+package server
 
 import (
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/raft"
 )
 
-func StatusCommand(getStatus func() (raft.RaftStatus, error)) Command {
+func StatusCommand(getStatus func() (raft.RaftStatus, error)) cli.Command {
 	statusExecutor := func(strings []string) error {
 		status, err := getStatus()
 		if err != nil {
@@ -19,5 +20,5 @@ func StatusCommand(getStatus func() (raft.RaftStatus, error)) Command {
 		return nil
 	}
 
-	return createCommand("status", "Get the status of the cluster", statusExecutor, nil)
+	return cli.CreateCommand("status", "Get the status of the cluster", statusExecutor, nil)
 }

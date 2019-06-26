@@ -1,7 +1,8 @@
-package cli
+package server
 
 import (
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/c-bata/go-prompt"
 	"go.etcd.io/etcd/raft/raftpb"
@@ -11,7 +12,7 @@ import (
 
 // executes the node command, allowing members
 // of the cluster to add and remove nodes
-func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.RaftStatus, error)) Command {
+func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.RaftStatus, error)) cli.Command {
 	nodeCreateExecutor := func(args []string) error {
 		if len(args) != 3 {
 			return fmt.Errorf("command takes exactly ${ID} ${URL}")
@@ -63,16 +64,16 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 		return suggestions
 	}
 
-	subCommands := Commands{
-		createCommand("create", "Add a node to the cluster", nodeCreateExecutor, nil),
-		createCommand("delete", "Delete a node from the cluster", nodeDeleteExecutor, nodeDeleteCompleter),
+	subCommands := cli.Commands{
+		cli.CreateCommand("create", "Add a node to the cluster", nodeCreateExecutor, nil),
+		cli.CreateCommand("delete", "Delete a node from the cluster", nodeDeleteExecutor, nodeDeleteCompleter),
 	}
 
 	nodeExecutor := func(args []string) error {
 		if len(args) > 1 {
 			subCommand, err := subCommands.Match(args[1])
 			if err == nil {
-				return subCommand.executor(args[1:])
+				return subCommand.Executor(args[1:])
 			}
 		}
 		subCommands.GenerateHelp("Available subcommands:")
@@ -83,7 +84,7 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 		currentCommand := in.TextBeforeCursor()
 		args := strings.Split(currentCommand, " ")
 
-		var subCommand Command
+		var subCommand cli.Command
 		if len(args) > 1 {
 			var err error
 			subCommand, err = subCommands.Match(args[1])
@@ -91,12 +92,12 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 				return subCommands.GenerateSuggestions()
 			}
 		}
-		if len(args) > 2 && subCommand.completer != nil {
-			return subCommand.completer(in)
+		if len(args) > 2 && subCommand.Completer != nil {
+			return subCommand.Completer(in)
 		}
 
 		return []prompt.Suggest{}
 	}
 
-	return createCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
+	return cli.CreateCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
 }

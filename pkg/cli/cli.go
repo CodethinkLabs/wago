@@ -11,21 +11,21 @@ import (
 	"strings"
 )
 
-// provided a list of commands, generates a completer
-// and executor to run those commands
+// provided a list of commands, generates a Completer
+// and Executor to run those commands
 func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) []prompt.Suggest) {
 
 	var commandList Commands = commands
 
 	// iterates through each registered command until it
-	// finds a match and runs its executor
+	// finds a match and runs its Executor
 	executor := func(in string) {
 		in = strings.TrimSpace(in)
 		args := strings.Split(in, " ")
 		command, err := commandList.Match(args[0])
 
 		if err == nil {
-			err := command.executor(args)
+			err := command.Executor(args)
 			if err != nil {
 				fmt.Printf("Error with previous command: %s\n", err)
 			}
@@ -44,7 +44,7 @@ func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) [
 	}
 
 	// iterates through each registered command until it
-	// finds a match and runs its completer
+	// finds a match and runs its Completer
 	completer := func(in prompt.Document) []prompt.Suggest {
 		currentCommand := in.TextBeforeCursor()
 		args := strings.Split(currentCommand, " ")
@@ -53,8 +53,8 @@ func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) [
 			suggestions := commandList.GenerateSuggestions()
 			return prompt.FilterHasPrefix(suggestions, in.GetWordBeforeCursor(), true)
 		}
-		if match.completer != nil {
-			return match.completer(in)
+		if match.Completer != nil {
+			return match.Completer(in)
 		} else {
 			return []prompt.Suggest{}
 		}
@@ -62,3 +62,22 @@ func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) [
 
 	return executor, completer
 }
+
+func StartCLI(executor func(in string), completer func(in prompt.Document) []prompt.Suggest) {
+	fmt.Println("Welcome to wago.")
+	p := prompt.New(
+		executor, completer,
+		prompt.OptionTitle("wago Wallet"),
+		prompt.OptionPrefixTextColor(prompt.White),
+		prompt.OptionSuggestionBGColor(prompt.Purple),
+		prompt.OptionDescriptionBGColor(prompt.White),
+		prompt.OptionDescriptionTextColor(prompt.Purple),
+		prompt.OptionSelectedSuggestionTextColor(prompt.White),
+		prompt.OptionSelectedSuggestionBGColor(prompt.DarkBlue),
+		prompt.OptionSelectedDescriptionBGColor(prompt.Blue),
+		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
+		prompt.OptionPrefix("$ "),
+	)
+	p.Run()
+}
+

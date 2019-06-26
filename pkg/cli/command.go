@@ -9,15 +9,15 @@ import (
 type Command struct {
 	name        string
 	description string
-	executor    func([]string) error
-	completer   func(prompt.Document) []prompt.Suggest
+	Executor    func([]string) error
+	Completer   func(prompt.Document) []prompt.Suggest
 }
 
 type Commands []Command
 
 // creates a new command with a given name
-// completer may be null
-func createCommand(name string, description string, executor func([]string) error, completer func(prompt.Document) []prompt.Suggest) Command {
+// Completer may be null
+func CreateCommand(name string, description string, executor func([]string) error, completer func(prompt.Document) []prompt.Suggest) Command {
 	return Command{name, description, executor, completer,}
 }
 

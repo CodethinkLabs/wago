@@ -1,7 +1,8 @@
-package cli
+package server
 
 import (
 	"fmt"
+	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/util"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
@@ -9,7 +10,7 @@ import (
 // executes the bank command, returning to the user the
 // current balance of all their local wallets
 // syntax: bank [full]
-func BankCommand(store *wallet.Store) Command {
+func BankCommand(store *wallet.Store) cli.Command {
 	bankExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
@@ -37,5 +38,5 @@ func BankCommand(store *wallet.Store) Command {
 		return nil
 	}
 
-	return createCommand("bank", "Display the current balance in each of the local wallets", bankExecutor, nil)
+	return cli.CreateCommand("bank", "Display the current balance in each of the local wallets", bankExecutor, nil)
 }

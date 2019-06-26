@@ -1,12 +1,15 @@
-package cli
+package common
 
-import "github.com/CodethinkLabs/wago/pkg/wallet"
+import (
+	"github.com/CodethinkLabs/wago/pkg/cli"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
+)
 
 // executes the auth command, allowing the user to
 // set a password for the current session for
 // encryption and decryption of the wallet file
 // syntax: auth ${OPTIONAL_PASS}
-var AuthCommand = createCommand("auth", "Set the password for the session", authExecutor, nil)
+var AuthCommand = cli.CreateCommand("auth", "Set the password for the session", authExecutor, nil)
 
 func authExecutor(args []string) error {
 	if len(args) != 2 {
