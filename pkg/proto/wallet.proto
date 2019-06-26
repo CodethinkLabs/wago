@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package wago_proto;
+option go_package = "proto";
+
+import "google/protobuf/timestamp.proto";
+
+service WalletService {
+    // submit a transaction to the network, and get updates as it is approved
+    rpc SubmitTransaction (Transaction) returns (stream TransactionUpdate) {}
+
+    // request the balance for a number of public keys
+    rpc GetBalance (BalanceRequest) returns (Balances) {}
+
+    // subscribe to currency transfer events
+    rpc Subscribe (Empty) returns (stream WalletUpdate) {}
+}
+
+message DecimalAmount {
+    int64 value = 1;
+    int64 decimal = 2;
+}
+
+// todo(arlyon) secure against replay by requiring a timestamp
+message Transaction {
+    WalletUpdate update = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    bytes sig = 3;
+}
+
+message TransactionUpdate {
+    enum Status {
+        RECEIVED = 0;
+        PROPOSED = 1;
+        INVALIDATED = 2;
+        COMMITTED = 3;
+    }
+
+    bytes identifier = 1;
+    Status status = 2;
+}
+
+message BalanceRequest {
+    repeated bytes publicKeys = 1;
+}
+
+// todo(arlyon) any suggestions to not use string here?
+message Balances {
+    map<string, Wallet> wallets = 1;
+}
+
+message Wallet {
+    map<string, DecimalAmount> currencies = 1;
+}
+
+message Empty {
+
+}
+
+message WalletUpdate {
+    bytes src = 1;
+    bytes dest = 2;
+    DecimalAmount amount = 4;
+    string currency = 5;
+}

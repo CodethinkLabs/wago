@@ -1,4 +1,4 @@
-// package main is the entry point into the server
+// package main is the entry point into the walletServer
 // command line interface
 //
 // Program flags:
@@ -15,6 +15,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/cli"
+	"github.com/CodethinkLabs/wago/pkg/cli/common"
+	"github.com/CodethinkLabs/wago/pkg/cli/server"
 	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	etcdRaft "go.etcd.io/etcd/raft"
@@ -30,6 +32,7 @@ import (
 
 func main() {
 	cluster := flag.String("cluster", "http://127.0.0.1:9020", "comma separated cluster peers")
+	serverPort := flag.String("grpc-port", "", "if supplied, hosts a grpc API on this port")
 	id := flag.Int("id", 1, "node ID")
 	join := flag.Bool("join", false, "join an existing cluster")
 	flag.Parse()
@@ -51,6 +54,10 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC, wg)
+
+	if *serverPort != "" {
+		go runGRPC(store, *serverPort)
+	}
 
 	if hasTTY() {
 		// if we have access to a tty, start the CLI

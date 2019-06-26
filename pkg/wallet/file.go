@@ -65,6 +65,15 @@ func (w localWallet) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 	}
 }
 
+// gets all the public keys from the wallet
+func (w localWallet) GetKeys() []ed25519.PublicKey {
+	keys := make([]ed25519.PublicKey, 0)
+	for _, key := range w {
+		keys = append(keys, key.PublicKey)
+	}
+	return keys
+}
+
 // writes the localWallet to disk
 func WriteWallet(wallet localWallet) {
 	data, err := yaml.Marshal(&wallet)
