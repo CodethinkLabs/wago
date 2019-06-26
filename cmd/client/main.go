@@ -32,6 +32,7 @@ func main() {
 		common.DeleteCommand,
 		common.AuthCommand,
 		client.BankCommand(ctx, protoClient),
+		client.SendCommand(ctx, protoClient),
 	)
 	cli.StartCLI(executor, completer)
 }

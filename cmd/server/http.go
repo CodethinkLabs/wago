@@ -14,8 +14,27 @@ type walletServer struct {
 	store *wallet.Store
 }
 
-func (s walletServer) SubmitTransaction(*proto.Transaction, proto.WalletService_SubmitTransactionServer) error {
-	panic("implement me")
+func (s walletServer) SubmitTransaction(t *proto.Transaction, r proto.WalletService_SubmitTransactionServer) error {
+	var sig [64]byte
+	copy(sig[:], t.Sig)
+
+	err := s.store.Propose(wallet.Transaction{
+		Src: t.Update.Src, Dest: t.Update.Dest, Sig: sig,
+		Curr:   wallet.Currency(t.Update.Currency),
+		Amount: wallet.DecimalAmount{Value: t.Update.Amount.Value, Decimal: int8(t.Update.Amount.Decimal)},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// todo(arlyon) provide accurate updates
+	err = r.Send(&proto.TransactionUpdate{Status: proto.TransactionUpdate_COMMITTED})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s walletServer) GetBalance(ctx context.Context, request *proto.BalanceRequest) (*proto.Balances, error) {

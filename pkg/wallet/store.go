@@ -39,7 +39,7 @@ type Store struct {
 	snapshotter *snap.Snapshotter
 }
 
-type transaction struct {
+type Transaction struct {
 	Src    ed25519.PublicKey
 	Dest   ed25519.PublicKey
 	Sig    [ed25519.SignatureSize]byte
@@ -98,7 +98,7 @@ func (s *Store) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 //
 // performs a simple crypto check to make sure the transaction is
 // signed by the src address
-func (s *Store) Propose(trans transaction) error {
+func (s *Store) Propose(trans Transaction) error {
 	log.Printf("prop signature: %x\n", trans.Sig)
 	if !trans.IsVerified() {
 		return fmt.Errorf("provided signature does not match the public key")
@@ -134,7 +134,7 @@ func (s *Store) readCommits(commitC <-chan *string, errorC <-chan error) {
 			continue
 		}
 
-		var nextTrans transaction
+		var nextTrans Transaction
 		dec := gob.NewDecoder(bytes.NewBufferString(*data))
 		if err := dec.Decode(&nextTrans); err != nil {
 			log.Fatalf("raftrade: could not decode message (%v)", err)

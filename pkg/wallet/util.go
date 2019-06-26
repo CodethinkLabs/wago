@@ -70,8 +70,8 @@ func (d DecimalAmount) Subtract(d2 DecimalAmount) DecimalAmount {
 }
 
 // constructor for the transaction struct
-func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) transaction {
-	return transaction{src, dest, [64]byte{}, curr, amount, create}
+func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) Transaction {
+	return Transaction{src, dest, [64]byte{}, curr, amount, create}
 }
 
 // returns the inverse decimal amount under addition
@@ -85,7 +85,7 @@ func (d DecimalAmount) isPositive() bool {
 }
 
 // gets a []byte representation that can be signed
-func (t transaction) GetSignableRepresentation() []byte {
+func (t Transaction) GetSignableRepresentation() []byte {
 	type sign struct {
 		Src    ed25519.PublicKey
 		Dest   ed25519.PublicKey
@@ -102,12 +102,12 @@ func (t transaction) GetSignableRepresentation() []byte {
 }
 
 // validates a request to pay somebody
-func (t transaction) IsVerified() bool {
+func (t Transaction) IsVerified() bool {
 	return t.Create || ed25519.Verify(t.Src, t.GetSignableRepresentation(), t.Sig[:])
 }
 
 // signs a request to pay somebody
-func (t *transaction) Sign(key ed25519.PrivateKey) {
+func (t *Transaction) Sign(key ed25519.PrivateKey) {
 	if !t.Create {
 		copy(t.Sig[:], ed25519.Sign(key, t.GetSignableRepresentation()))
 	}
