@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "bank.go",
+        "create.go",
         "send.go",
     ],
     importpath = "github.com/CodethinkLabs/wago/pkg/cli/client",

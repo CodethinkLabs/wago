@@ -33,6 +33,7 @@ func main() {
 		common.AuthCommand,
 		client.BankCommand(ctx, protoClient),
 		client.SendCommand(ctx, protoClient),
+		client.CreateCommand(ctx, protoClient),
 	)
 	cli.StartCLI(executor, completer)
 }

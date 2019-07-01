@@ -9,6 +9,8 @@ service WalletService {
     // submit a transaction to the network, and get updates as it is approved
     rpc SubmitTransaction (Transaction) returns (stream TransactionUpdate) {}
 
+    rpc CreateCurrency (Create) returns (stream TransactionUpdate) {}
+
     // request the balance for a number of public keys
     rpc GetBalance (BalanceRequest) returns (Balances) {}
 
@@ -21,11 +23,16 @@ message DecimalAmount {
     int64 decimal = 2;
 }
 
-// todo(arlyon) secure against replay by requiring a timestamp
 message Transaction {
     WalletUpdate update = 1;
     google.protobuf.Timestamp timestamp = 2;
     bytes sig = 3;
+}
+
+message Create {
+    WalletUpdate update = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    string password = 3;
 }
 
 message TransactionUpdate {
@@ -38,6 +45,7 @@ message TransactionUpdate {
 
     bytes identifier = 1;
     Status status = 2;
+    string message = 3;
 }
 
 message BalanceRequest {

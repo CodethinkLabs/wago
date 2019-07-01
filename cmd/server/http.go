@@ -14,6 +14,29 @@ type walletServer struct {
 	store *wallet.Store
 }
 
+func (s walletServer) CreateCurrency(c *proto.Create, r proto.WalletService_CreateCurrencyServer) error {
+	trans, err := wallet.NewTransaction(
+		nil, c.Update.Dest,
+		wallet.Currency(c.Update.Currency),
+		wallet.DecimalAmount{Value: c.Update.Amount.Value, Decimal: int8(c.Update.Amount.Decimal),},
+		true,
+	)
+
+	if err != nil {
+		err = r.Send(&proto.TransactionUpdate{Status: proto.TransactionUpdate_INVALIDATED, Message: err.Error()})
+		return err
+	}
+
+	err = s.store.Propose(trans)
+	if err != nil {
+		err = r.Send(&proto.TransactionUpdate{Status: proto.TransactionUpdate_INVALIDATED, Message: err.Error()})
+		return err
+	}
+
+	// todo(arlyon) provide accurate updates
+	return r.Send(&proto.TransactionUpdate{Status: proto.TransactionUpdate_COMMITTED})
+}
+
 func (s walletServer) SubmitTransaction(t *proto.Transaction, r proto.WalletService_SubmitTransactionServer) error {
 	var sig [64]byte
 	copy(sig[:], t.Sig)
