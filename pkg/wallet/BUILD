@@ -15,6 +15,7 @@ go_library(
         "@io_etcd_go_etcd//etcdserver/api/snap:go_default_library",
         "@org_golang_x_crypto//ed25519:go_default_library",
         "@org_golang_x_crypto//pbkdf2:go_default_library",
+        "@org_golang_x_crypto//sha3:go_default_library",
         "@org_golang_x_crypto//ssh/terminal:go_default_library",
     ],
 )

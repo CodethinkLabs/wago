@@ -8,11 +8,11 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/sha3"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -250,7 +250,10 @@ func createWalletFile() []byte {
 }
 
 // hashes the provided user password into an appropriate AES key
-// todo hardcoded salt... ?
+// takes the sha3 of the user's password as the salt for pbkdf2.
 func hashPassword(password string) []byte {
-	return pbkdf2.Key([]byte(password), []byte("deadbeef12345678"), 4096, 32, sha1.New)
+	saltHasher := sha3.New256()
+	saltHasher.Write([]byte(password))
+
+	return pbkdf2.Key([]byte(password), saltHasher.Sum(nil), 4096, 32, sha3.New256)
 }
