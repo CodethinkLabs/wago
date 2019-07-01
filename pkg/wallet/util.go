@@ -70,8 +70,16 @@ func (d DecimalAmount) Subtract(d2 DecimalAmount) DecimalAmount {
 }
 
 // constructor for the transaction struct
-func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) Transaction {
-	return Transaction{src, dest, [64]byte{}, curr, amount, create}
+func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) (Transaction, error) {
+	if !create && (src == nil || len(src) != ed25519.PublicKeySize) {
+		return Transaction{}, fmt.Errorf("invalid source address provided")
+	}
+
+	if dest == nil || len(dest) != ed25519.PublicKeySize {
+		return Transaction{}, fmt.Errorf("invalid destination address provided")
+	}
+
+	return Transaction{src, dest, [64]byte{}, curr, amount, create}, nil
 }
 
 // returns the inverse decimal amount under addition
@@ -85,7 +93,7 @@ func (d DecimalAmount) isPositive() bool {
 }
 
 // gets a []byte representation that can be signed
-func (t Transaction) GetSignableRepresentation() []byte {
+func (t Transaction) GetSignableRepresentation() ([]byte, error) {
 	type sign struct {
 		Src    ed25519.PublicKey
 		Dest   ed25519.PublicKey
@@ -95,22 +103,32 @@ func (t Transaction) GetSignableRepresentation() []byte {
 
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(sign{t.Src, t.Dest, t.Curr, t.Amount}); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 // validates a request to pay somebody
-func (t Transaction) IsVerified() bool {
-	return t.Create || ed25519.Verify(t.Src, t.GetSignableRepresentation(), t.Sig[:])
+func (t *Transaction) IsVerified() bool {
+	data, err := t.GetSignableRepresentation()
+	return err == nil && (t.Create || ed25519.Verify(t.Src, data, t.Sig[:]))
 }
 
 // signs a request to pay somebody
-func (t *Transaction) Sign(key ed25519.PrivateKey) {
-	if !t.Create {
-		copy(t.Sig[:], ed25519.Sign(key, t.GetSignableRepresentation()))
+func (t *Transaction) Sign(key ed25519.PrivateKey) error {
+	if t.Create {
+		return fmt.Errorf("cannot sign a create transaction")
+	} else if len(key) != ed25519.PrivateKeySize {
+		return fmt.Errorf("private key for address %x is the wrong length", t.Src)
 	}
+
+	data, err := t.GetSignableRepresentation()
+	if err != nil {
+		return err
+	}
+	copy(t.Sig[:], ed25519.Sign(key, data))
+	return nil
 }
 
 // returns true if the wallet belonging to key

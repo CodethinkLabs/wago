@@ -22,7 +22,9 @@ func BankCommand(ctx context.Context, client proto.WalletServiceClient) cli.Comm
 			fmt.Println("No credentials in wallet.")
 			return nil
 		}
-		response, err := client.GetBalance(ctx, &proto.BalanceRequest{PublicKeys: convertKeys(walletFile.GetKeys())})
+
+		balanceRequest := &proto.BalanceRequest{PublicKeys: convertKeys(walletFile.GetKeys())}
+		response, err := client.GetBalance(ctx, balanceRequest)
 
 		if err != nil {
 			panic(err)

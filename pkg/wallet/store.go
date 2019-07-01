@@ -99,14 +99,13 @@ func (s *Store) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 // performs a simple crypto check to make sure the transaction is
 // signed by the src address
 func (s *Store) Propose(trans Transaction) error {
-	log.Printf("prop signature: %x\n", trans.Sig)
 	if !trans.IsVerified() {
 		return fmt.Errorf("provided signature does not match the public key")
 	}
 
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(trans); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	s.proposeC <- buf.String()
 

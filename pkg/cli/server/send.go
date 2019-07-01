@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
@@ -18,20 +17,20 @@ type sendContext struct {
 	SrcPublic  ed25519.PublicKey
 	SrcPrivate ed25519.PrivateKey
 	DstPublic  ed25519.PublicKey
-	Value      int64
-	Decimal    int8
+	Amount     wallet.DecimalAmount
 	Currency   wallet.Currency
 }
 
 // executes the send command, allowing the user to
 // send currency from one of their wallets to another
-// syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
+// syntax: send ${SRC} ${DST} ${AMOUNT} ${CURRENCY}
 func SendCommand(store *wallet.Store) cli.Command {
 	sendExecutor := func(args []string) error {
 		walletFile, err := wallet.ReadWallet()
 		if err != nil {
 			return err
 		}
+
 		ctx := sendContext{}
 
 		switch len(args) {
@@ -42,7 +41,7 @@ func SendCommand(store *wallet.Store) cli.Command {
 			fallthrough
 		case 4: // amount todo(arlyon) decimal numbers a well
 			num, _ := strconv.Atoi(args[3])
-			ctx.Value = int64(num)
+			ctx.Amount = wallet.DecimalAmount{Value: int64(num)}
 			fallthrough
 		case 3: // dst address
 			if match, ok := store.PrefixSearch(args[2]); ok {
@@ -87,7 +86,6 @@ func SendCommand(store *wallet.Store) cli.Command {
 			// currency
 			sourceKey, _ := hex.DecodeString(args[1])
 			for key := range store.WalletStore {
-				// todo(arlyon) can suggest wrong currencies if keys clash
 				if !bytes.HasPrefix(key[:], sourceKey) {
 					continue
 				}
@@ -122,7 +120,7 @@ func CreateCommand(store *wallet.Store) cli.Command {
 			fallthrough
 		case 3: // amount todo(arlyon) decimal numbers
 			num, _ := strconv.Atoi(args[2])
-			ctx.Value = int64(num)
+			ctx.Amount.Value= int64(num)
 			fallthrough
 		case 2:
 			if match, ok := walletFile.PrefixSearch(args[1]); ok {
@@ -166,18 +164,16 @@ func CreateCommand(store *wallet.Store) cli.Command {
 // 				 meaning that the currency will be generated from nothing.
 //			     Create commands with a source public or private key will error.
 func createTransaction(store wallet.Store, ctx sendContext, create bool) error {
-	trans := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, wallet.DecimalAmount{Value: ctx.Value, Decimal: ctx.Decimal}, create)
-
-	if !create && ctx.SrcPublic == nil {
-		return fmt.Errorf("invalid source address provided")
-	} else if !create && len(ctx.SrcPrivate) != ed25519.PrivateKeySize {
-		return fmt.Errorf("private key for address %x is the wrong length", ctx.SrcPublic)
-	} else if create && len(ctx.SrcPrivate) != 0 && len(ctx.SrcPublic) != 0 {
-		// we panic here because the invariant is the fault of the programmer
-		panic(fmt.Errorf("source private or public key passed to create command"))
+	trans, err := wallet.NewTransaction(ctx.SrcPublic, ctx.DstPublic, ctx.Currency, ctx.Amount, create)
+	if err != nil {
+		return err
 	}
 
-	trans.Sign(ctx.SrcPrivate)
-	err := store.Propose(trans)
+	err = trans.Sign(ctx.SrcPrivate)
+	if err != nil {
+		return err
+	}
+
+	err = store.Propose(trans)
 	return err // or nil
 }

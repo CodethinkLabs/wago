@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
@@ -91,17 +90,17 @@ func SendCommand(ctx context.Context, client proto.WalletServiceClient) cli.Comm
 }
 
 func createTransaction(sendCtx sendContext, ctx context.Context, client proto.WalletServiceClient) error {
-	trans := wallet.NewTransaction(sendCtx.SrcPublic, sendCtx.DstPublic, sendCtx.Currency, wallet.DecimalAmount{Value: sendCtx.Value, Decimal: sendCtx.Decimal}, false)
-
-	if sendCtx.SrcPublic == nil {
-		return fmt.Errorf("invalid source address provided")
-	} else if len(sendCtx.SrcPrivate) != ed25519.PrivateKeySize {
-		return fmt.Errorf("private key for address %x is the wrong length", sendCtx.SrcPublic)
+	trans, err := wallet.NewTransaction(sendCtx.SrcPublic, sendCtx.DstPublic, sendCtx.Currency, wallet.DecimalAmount{Value: sendCtx.Value, Decimal: sendCtx.Decimal}, false)
+	if err != nil {
+		return err
 	}
 
-	trans.Sign(sendCtx.SrcPrivate)
+	err = trans.Sign(sendCtx.SrcPrivate)
+	if err != nil {
+		return err
+	}
 
-	transactionClient, err := client.SubmitTransaction(ctx, &proto.Transaction{
+	protoTransaction := &proto.Transaction{
 		Update: &proto.WalletUpdate{
 			Src: sendCtx.SrcPublic,
 			Dest: sendCtx.DstPublic,
@@ -113,8 +112,9 @@ func createTransaction(sendCtx sendContext, ctx context.Context, client proto.Wa
 		},
 		Timestamp: ptypes.TimestampNow(),
 		Sig: trans.Sig[:],
-	})
+	}
 
+	transactionClient, err := client.SubmitTransaction(ctx, protoTransaction)
 	if err != nil {
 		return err
 	}
