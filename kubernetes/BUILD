@@ -15,9 +15,15 @@ k8s_object(
 )
 
 k8s_object(
-    name = "deploy-service",
+    name = "deploy-balancer",
     kind = "service",
-    template = "//kubernetes:wago-service.yaml",
+    template = "//kubernetes:wago-balancer.yaml",
+)
+
+k8s_object(
+    name = "deploy-cluster",
+    kind = "service",
+    template = "//kubernetes:wago-cluster.yaml",
 )
 
 k8s_objects(
@@ -25,6 +31,7 @@ k8s_objects(
     objects = [
         ":deploy-namespace",
         ":deploy-server",
-        ":deploy-service",
+        ":deploy-balancer",
+        ":deploy-cluster",
     ],
 )

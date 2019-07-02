@@ -8,7 +8,7 @@ metadata:
       server
 spec:
   replicas: 5
-  serviceName: server
+  serviceName: cluster
   selector:
     matchLabels:
       app: server
