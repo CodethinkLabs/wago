@@ -1,4 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 #
 # download the deps
@@ -21,6 +22,12 @@ http_archive(
     sha256 = "87fc6a2b128147a0a3039a2fd0b53cc1f2ed5adb8716f50756544a572999ae9a",
     strip_prefix = "rules_docker-0.8.1",
     urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.8.1.tar.gz"],
+)
+
+git_repository(
+    name = "io_bazel_rules_k8s",
+    commit = "db2293b77c2778444e278831855463cb2bc6fafa",
+    remote = "https://github.com/bazelbuild/rules_k8s.git",
 )
 
 # set up rules_go
@@ -50,6 +57,12 @@ load(
 )
 
 _go_image_repos()
+
+# k8s repositories
+
+load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
+
+k8s_repositories()
 
 #
 # define go repos
