@@ -15,7 +15,7 @@ go_library(
 )
 
 go_binary(
-    name = "main",
+    name = "binary",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
