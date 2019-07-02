@@ -16,7 +16,7 @@ func main() {
 	cluster := flag.String("cluster", "localhost:8080", "wago cluster to connect to")
 	flag.Parse()
 
-	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
+	conn, err := grpc.Dial(*cluster, grpc.WithInsecure())
 	if err != nil {
 		fmt.Printf("Could not connect to server at %s... exiting\n", *cluster)
 		panic(err)
