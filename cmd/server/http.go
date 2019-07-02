@@ -38,15 +38,19 @@ func (s walletServer) CreateCurrency(c *proto.Create, r proto.WalletService_Crea
 }
 
 func (s walletServer) SubmitTransaction(t *proto.Transaction, r proto.WalletService_SubmitTransactionServer) error {
-	var sig [64]byte
-	copy(sig[:], t.Sig)
+	trans, err := wallet.NewTransaction(
+		t.Update.Src, t.Update.Dest,
+		wallet.Currency(t.Update.Currency),
+		wallet.DecimalAmount{Value: t.Update.Amount.Value, Decimal: int8(t.Update.Amount.Decimal)},
+		false,
+	)
+	if err != nil {
+		return err
+	}
 
-	err := s.store.Propose(wallet.Transaction{
-		Src: t.Update.Src, Dest: t.Update.Dest, Sig: sig,
-		Curr:   wallet.Currency(t.Update.Currency),
-		Amount: wallet.DecimalAmount{Value: t.Update.Amount.Value, Decimal: int8(t.Update.Amount.Decimal)},
-	})
+	copy(trans.Sig[:], t.Sig)
 
+	err = s.store.Propose(trans)
 	if err != nil {
 		return err
 	}
@@ -77,6 +81,7 @@ func (s walletServer) GetBalance(ctx context.Context, request *proto.BalanceRequ
 			}
 		}
 	}
+
 	return &balances, nil
 }
 
