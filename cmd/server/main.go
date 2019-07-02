@@ -23,6 +23,7 @@ import (
 	"go.etcd.io/etcd/raft/raftpb"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"syscall"
@@ -31,11 +32,30 @@ import (
 )
 
 func main() {
-	cluster := flag.String("cluster", "http://127.0.0.1:9020", "comma separated cluster peers")
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "localhost"
+	}
+
+	cluster := flag.String("cluster", "http://"+hostname+":9020", "comma separated cluster peers")
 	serverPort := flag.String("grpc-port", "", "if supplied, hosts a grpc API on this port")
-	id := flag.Int("id", 1, "node ID")
+	id := flag.Int("id", -1, "node ID")
 	join := flag.Bool("join", false, "join an existing cluster")
 	flag.Parse()
+
+	clusterNodes := strings.Split(*cluster, ",")
+
+	if *id == -1 {
+		// look up the id in the cluster list, by matching hostname
+		for index, node := range clusterNodes {
+			if strings.Contains(node, hostname) {
+				*id = index + 1
+			}
+		}
+		fmt.Println("Detected hostname as", hostname, "and id as", *id)
+	} else {
+		fmt.Println("Id set to", *id)
+	}
 
 	proposeC := make(chan string)               // for state machine proposals
 	confChangeC := make(chan raftpb.ConfChange) // for config proposals (peer layout)
@@ -47,7 +67,7 @@ func main() {
 
 	// channels for all the validated commits, errors, and an indicator when snapshots are ready
 	// this starts many goroutines+-
-	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady, statusGetter := wagoRaft.NewRaftNode(*id, clusterNodes, *join, getSnapshot, proposeC, confChangeC)
 
 	// initialize the chat store with all the channels
 	// this starts a goroutine
@@ -62,6 +82,7 @@ func main() {
 	if hasTTY() {
 		// if we have access to a tty, start the CLI
 		// run in a goroutine so that if raft closes, the CLI exits
+		enableLogging()
 		go func() {
 			executor, completer := cli.CreateCLI(
 				server.BankCommand(store),
@@ -119,4 +140,9 @@ func disableLogging() {
 		panic(err)
 	}
 	wagoRaft.ZapLog = prodZapLog
+}
+
+func enableLogging() {
+	etcdRaft.SetLogger(&etcdRaft.DefaultLogger{Logger: log.New(os.Stderr, "raft", log.LstdFlags)})
+	wagoRaft.ZapLog = zap.NewExample()
 }
