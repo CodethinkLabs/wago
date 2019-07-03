@@ -89,7 +89,6 @@ func main() {
 	if hasTTY() {
 		// if we have access to a tty, start the CLI
 		// run in a goroutine so that if raft closes, the CLI exits
-		enableLogging()
 		go func() {
 			executor, completer := cli.CreateCLI(
 				server.BankCommand(store),
@@ -104,8 +103,8 @@ func main() {
 			cli.StartCLI(executor, completer)
 		}()
 	} else {
-		// else just start in "headless mode"
 		fmt.Println("Starting in headless mode.")
+		enableLogging() // re-enable logging
 	}
 
 	wg.Wait()
