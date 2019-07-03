@@ -38,6 +38,7 @@ func main() {
 	}
 
 	cluster := flag.String("cluster", "http://"+hostname+":9020", "comma separated cluster peers")
+	hostnameSuffix := flag.String("hostname-suffix", "", "a suffix to append to the hostname when doing dns lookups")
 	serverPort := flag.String("grpc-port", "", "if supplied, hosts a grpc API on this port")
 	id := flag.Int("id", -1, "node ID")
 	join := flag.Bool("join", false, "join an existing cluster")
@@ -48,9 +49,15 @@ func main() {
 	if *id == -1 {
 		// look up the id in the cluster list, by matching hostname
 		for index, node := range clusterNodes {
-			if strings.Contains(node, hostname) {
+			if strings.Contains(node, hostname + *hostnameSuffix) {
 				*id = index + 1
 			}
+		}
+		if *id == -1 {
+			fmt.Println("Cannot find this machine in the cluster list. Aborting.")
+			fmt.Printf("  - Hostname: %s\n", hostname + *hostnameSuffix)
+			fmt.Printf("  - Cluster list: %s\n", strings.Join(clusterNodes, ", "))
+			os.Exit(1)
 		}
 		fmt.Println("Detected hostname as", hostname, "and id as", *id)
 	} else {
