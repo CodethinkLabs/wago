@@ -169,9 +169,11 @@ func createTransaction(store wallet.Store, ctx sendContext, create bool) error {
 		return err
 	}
 
-	err = trans.Sign(ctx.SrcPrivate)
-	if err != nil {
-		return err
+	if !create {
+		err = trans.Sign(ctx.SrcPrivate)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = store.Propose(trans)
