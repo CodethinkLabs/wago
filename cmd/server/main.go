@@ -23,6 +23,7 @@ import (
 	"go.etcd.io/etcd/raft/raftpb"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -63,6 +64,14 @@ func main() {
 	} else {
 		fmt.Println("Id set to", *id)
 	}
+	
+	hostUrl, err := url.Parse(clusterNodes[*id - 1])
+	if err != nil {
+		panic(err)
+	}
+
+	hostUrl.Host = "0.0.0.0:" + hostUrl.Port()
+	clusterNodes[*id - 1] = hostUrl.String()
 
 	proposeC := make(chan string)               // for state machine proposals
 	confChangeC := make(chan raftpb.ConfChange) // for config proposals (peer layout)
