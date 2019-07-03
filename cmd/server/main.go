@@ -46,6 +46,7 @@ func main() {
 	flag.Parse()
 
 	clusterNodes := strings.Split(*cluster, ",")
+	terminalAttached := hasTTY()
 
 	if *id == -1 {
 		// look up the id in the cluster list, by matching hostname
@@ -73,6 +74,10 @@ func main() {
 	hostUrl.Host = "0.0.0.0:" + hostUrl.Port()
 	clusterNodes[*id - 1] = hostUrl.String()
 
+	if terminalAttached {
+		disableLogging()
+	}
+
 	proposeC := make(chan string)               // for state machine proposals
 	confChangeC := make(chan raftpb.ConfChange) // for config proposals (peer layout)
 	defer close(proposeC)
@@ -95,8 +100,7 @@ func main() {
 		go runGRPC(store, *serverPort)
 	}
 
-	if hasTTY() {
-		// if we have access to a tty, start the CLI
+	if terminalAttached {
 		// run in a goroutine so that if raft closes, the CLI exits
 		go func() {
 			executor, completer := cli.CreateCLI(
@@ -113,15 +117,10 @@ func main() {
 		}()
 	} else {
 		fmt.Println("Starting in headless mode.")
-		enableLogging() // re-enable logging
 	}
 
 	wg.Wait()
 	fmt.Println("Raft closed. Goodbye.")
-}
-
-func init() {
-	disableLogging()
 }
 
 func hasTTY() bool {
