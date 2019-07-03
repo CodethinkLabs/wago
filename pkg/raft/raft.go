@@ -109,8 +109,8 @@ func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, 
 		id:          id,
 		peers:       peers,
 		join:        join,
-		waldir:      fmt.Sprintf("raftrade-%d", id),
-		snapdir:     fmt.Sprintf("raftrade-%d-snap", id),
+		waldir:      fmt.Sprintf("log-%d", id),
+		snapdir:     fmt.Sprintf("log-%d-snap", id),
 		getSnapshot: getSnapshot,
 		snapCount:   defaultSnapshotCount,
 		stopc:       make(chan struct{}),
@@ -242,7 +242,7 @@ func (rc *raftNode) publishEntries(ents []raftpb.Entry) bool {
 func (rc *raftNode) loadSnapshot() *raftpb.Snapshot {
 	snapshot, err := rc.snapshotter.Load()
 	if err != nil && err != snap.ErrNoSnapshot {
-		Log.Fatalf("raftrade: error loading snapshot (%v)", err)
+		Log.Fatalf("error loading snapshot (%v)", err)
 	}
 	return snapshot
 }
@@ -251,12 +251,12 @@ func (rc *raftNode) loadSnapshot() *raftpb.Snapshot {
 func (rc *raftNode) openWAL(snapshot *raftpb.Snapshot) *wal.WAL {
 	if !wal.Exist(rc.waldir) {
 		if err := os.Mkdir(rc.waldir, 0750); err != nil {
-			Log.Fatalf("raftrade: cannot create dir for wal (%v)", err)
+			Log.Fatalf("cannot create dir for wal (%v)", err)
 		}
 
 		w, err := wal.Create(ZapLog, rc.waldir, nil)
 		if err != nil {
-			Log.Fatalf("raftrade: create wal error (%v)", err)
+			Log.Fatalf("create wal error (%v)", err)
 		}
 		w.Close()
 	}
@@ -268,7 +268,7 @@ func (rc *raftNode) openWAL(snapshot *raftpb.Snapshot) *wal.WAL {
 	Log.Printf("loading WAL at term %d and index %d", walsnap.Term, walsnap.Index)
 	w, err := wal.Open(ZapLog, rc.waldir, walsnap)
 	if err != nil {
-		Log.Fatalf("raftrade: error loading wal (%v)", err)
+		Log.Fatalf("error loading wal (%v)", err)
 	}
 
 	return w
@@ -281,7 +281,7 @@ func (rc *raftNode) replayWAL() *wal.WAL {
 	w := rc.openWAL(snapshot)
 	_, st, ents, err := w.ReadAll()
 	if err != nil {
-		Log.Fatalf("raftrade: failed to read WAL (%v)", err)
+		Log.Fatalf("failed to read WAL (%v)", err)
 	}
 	rc.raftStorage = raft.NewMemoryStorage()
 	if snapshot != nil {
@@ -311,7 +311,7 @@ func (rc *raftNode) writeError(err error) {
 func (rc *raftNode) startRaft() {
 	if !fileutil.Exist(rc.snapdir) {
 		if err := os.Mkdir(rc.snapdir, 0750); err != nil {
-			Log.Fatalf("raftrade: cannot create dir for snapshot (%v)", err)
+			Log.Fatalf("cannot create dir for snapshot (%v)", err)
 		}
 	}
 	rc.snapshotter = snap.New(ZapLog, rc.snapdir)
@@ -508,19 +508,19 @@ func (rc *raftNode) serveChannels() {
 func (rc *raftNode) serveRaft() {
 	u, err := url.Parse(rc.peers[rc.id-1])
 	if err != nil {
-		Log.Fatalf("raftrade: Failed parsing URL (%v)", err)
+		Log.Fatalf("failed parsing URL (%v)", err)
 	}
 
 	ln, err := newStoppableListener(u.Host, rc.httpstopc)
 	if err != nil {
-		Log.Fatalf("raftrade: Failed to listen rafthttp (%v)", err)
+		Log.Fatalf("failed to listen rafthttp (%v)", err)
 	}
 
 	err = (&http.Server{Handler: rc.transport.Handler()}).Serve(ln)
 	select {
 	case <-rc.httpstopc:
 	default:
-		Log.Fatalf("raftrade: Failed to serve rafthttp (%v)", err)
+		Log.Fatalf("failed to serve rafthttp (%v)", err)
 	}
 	close(rc.httpdonec)
 }

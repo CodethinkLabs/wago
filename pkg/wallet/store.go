@@ -136,7 +136,7 @@ func (s *Store) readCommits(commitC <-chan *string, errorC <-chan error) {
 		var nextTrans Transaction
 		dec := gob.NewDecoder(bytes.NewBufferString(*data))
 		if err := dec.Decode(&nextTrans); err != nil {
-			log.Fatalf("raftrade: could not decode message (%v)", err)
+			log.Fatalf("could not decode message (%v)", err)
 		}
 		if nextTrans.Curr == "" {
 			log.Printf("Dropping transaction with invalid currency")
