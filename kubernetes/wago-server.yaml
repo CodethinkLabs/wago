@@ -21,7 +21,8 @@ spec:
         - name: server
           args:
             - --grpc-port=8080
-            - --cluster=http://server-0:9020,http://server-1:9020,http://server-2:9020,http://server-3:9020,http://server-4:9020
+            - --cluster=http://server-0.cluster:9020,http://server-1.cluster:9020,http://server-2.cluster:9020,http://server-3.cluster:9020,http://server-4.cluster:9020
+            - --hostname-suffix=.cluster
             - --join
           image: index.docker.io/arlyon/wago:latest
           ports:
