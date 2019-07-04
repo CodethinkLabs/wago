@@ -1,4 +1,4 @@
-// Server runs a participating raft client that can send and
+// server runs a participating raft client that can send and
 // receive currency.
 //
 // Program flags:

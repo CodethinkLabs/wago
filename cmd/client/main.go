@@ -1,4 +1,4 @@
-// Client runs a non-participating raft client that can send
+// client runs a non-participating raft client that can send
 // receive currency. Being non-participating, this node does
 // not take part in the application and replication of commits.
 // It is only able to submit transactions to be committed to
