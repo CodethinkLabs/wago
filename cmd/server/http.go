@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"net"
+
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"golang.org/x/crypto/ed25519"
 	"google.golang.org/grpc"
-	"net"
 )
 
 type walletServer struct {
@@ -18,7 +19,7 @@ func (s walletServer) CreateCurrency(c *proto.Create, r proto.WalletService_Crea
 	trans, err := wallet.NewTransaction(
 		nil, c.Update.Dest,
 		wallet.Currency(c.Update.Currency),
-		wallet.DecimalAmount{Value: c.Update.Amount.Value, Decimal: int8(c.Update.Amount.Decimal),},
+		wallet.DecimalAmount{Value: c.Update.Amount.Value, Decimal: int8(c.Update.Amount.Decimal)},
 		true,
 	)
 

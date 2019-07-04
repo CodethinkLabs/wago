@@ -1,15 +1,27 @@
+// Client runs a non-participating raft client that can send
+// receive currency. Being non-participating, this node does
+// not take part in the application and replication of commits.
+// It is only able to submit transactions to be committed to
+// the cluster on their behalf.
+//
+// Program flags:
+//	--cluster: 	The IP address of any node in the cluster you
+//				wish to send transactions to.
+//
+// The client will crash on terminals without a tty.
 package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
+	"time"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/cli/client"
 	"github.com/CodethinkLabs/wago/pkg/cli/common"
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"google.golang.org/grpc"
-	"time"
 )
 
 func main() {

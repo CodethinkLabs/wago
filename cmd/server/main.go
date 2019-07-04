@@ -1,26 +1,27 @@
-// package main is the entry point into the walletServer
-// command line interface
+// Server runs a participating raft client that can send and
+// receive currency.
 //
 // Program flags:
-//  --cluster: A comma separated list of peer IP addresses
-//  --id:      This node's index in the list of peers
-//  --join:    Whether this node is joining an existing cluster
+//  --cluster:   		A comma separated list of peer IP addresses
+// 	--hostname-suffix:  A convenience command for kubernetes to derive
+//						the network name from the hostname
+//						ex: server-0 -> server-0.clusterip
+//  --id:        		This node's index in the list of peers. Optional
+//						if nodes can be identified by their hostnames
+//  --join:      		Whether this node is joining an existing cluster
+//  --grpc-port: 		A port on which to host a GRPC service for non-
+//				 		participatory clients to submit transactions to
 //
-// The cluster string should be identical between all nodes.
-// Because the ID has to be unique between nodes, we can use that
-// to assign the addresses. ID 1 takes the first IP address and so on.
+// The server will run an interactive interface on machines
+// with a tty, and headlessly on those without (ie docker or k8s).
+// Transactions submitted by other clients via the grpc service will
+// be securely (with tamper-resistance) submitted to the cluster on
+// that client's behalf.
 package main
 
 import (
 	"flag"
 	"fmt"
-	"github.com/CodethinkLabs/wago/pkg/cli"
-	"github.com/CodethinkLabs/wago/pkg/cli/common"
-	"github.com/CodethinkLabs/wago/pkg/cli/server"
-	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
-	"github.com/CodethinkLabs/wago/pkg/wallet"
-	etcdRaft "go.etcd.io/etcd/raft"
-	"go.etcd.io/etcd/raft/raftpb"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -28,6 +29,14 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/CodethinkLabs/wago/pkg/cli"
+	"github.com/CodethinkLabs/wago/pkg/cli/common"
+	"github.com/CodethinkLabs/wago/pkg/cli/server"
+	wagoRaft "github.com/CodethinkLabs/wago/pkg/raft"
+	"github.com/CodethinkLabs/wago/pkg/wallet"
+	etcdRaft "go.etcd.io/etcd/raft"
+	"go.etcd.io/etcd/raft/raftpb"
 
 	"go.uber.org/zap"
 )
@@ -51,13 +60,13 @@ func main() {
 	if *id == -1 {
 		// look up the id in the cluster list, by matching hostname
 		for index, node := range clusterNodes {
-			if strings.Contains(node, hostname + *hostnameSuffix) {
+			if strings.Contains(node, hostname+*hostnameSuffix) {
 				*id = index + 1
 			}
 		}
 		if *id == -1 {
 			fmt.Println("Cannot find this machine in the cluster list. Aborting.")
-			fmt.Printf("  - Hostname: %s\n", hostname + *hostnameSuffix)
+			fmt.Printf("  - Hostname: %s\n", hostname+*hostnameSuffix)
 			fmt.Printf("  - Cluster list: %s\n", strings.Join(clusterNodes, ", "))
 			os.Exit(1)
 		}
@@ -65,14 +74,14 @@ func main() {
 	} else {
 		fmt.Println("Id set to", *id)
 	}
-	
-	hostUrl, err := url.Parse(clusterNodes[*id - 1])
+
+	hostUrl, err := url.Parse(clusterNodes[*id-1])
 	if err != nil {
 		panic(err)
 	}
 
 	hostUrl.Host = "0.0.0.0:" + hostUrl.Port()
-	clusterNodes[*id - 1] = hostUrl.String()
+	clusterNodes[*id-1] = hostUrl.String()
 
 	if terminalAttached {
 		disableLogging()
