@@ -19,17 +19,19 @@ project hermetically.
 bazel build cmd/server:binary
 ```
 
-Next up from that, `rules_docker` allows trivial creation of docker images from
-bazel projects. Building bazel projects in docker the "traditional" way (with
-a Dockerfile) has, in its default config, docker build the project inside the
-container. This means all the benefits of build caching is wasted because it
-is erased every time. Additionally, the image gets bloated. Java, bazel, and
-the cache all must be available in the container.
+Next up from that, [`rules_docker`](https://github.com/bazelbuild/rules_docker) 
+allows trivial creation of docker images from bazel projects. Building bazel 
+projects in docker the "traditional" way (with a Dockerfile) has, in its default 
+config, docker build the project inside the container. This means all the 
+benefits of build caching is wasted because it is erased every time. Additionally, 
+the image gets bloated. Java, bazel, and the cache all must be available in the 
+container. Finally, there are no guarantees of hermeticity.
 
 Migrating to rules_docker brought the bloated ubuntu-based image from 1.6GB
 down to a lean 14MB as well as dramatically improving incremental build times
 (15 minutes down to a few seconds). It also allowed much simpler pushes to 
-docker hub.
+docker hub (a single command) and eliminates a whole class of vulnerability
+surface.
 
 ```bash
 # build docker image
@@ -42,14 +44,18 @@ bazel run cmd/server:push
 > Note: these commands do not have to be run sequentially as above. 
 > Push will build the image if changes are made.
 
-The last stage leverages `rules_k8s` to orchestrate entire deployments. It relies
-on both of the previous stages and will push new docker images as required when
-various commands are run.
+The last stage leverages [`rules_k8s`](https://github.com/bazelbuild/rules_k8s) 
+to orchestrate entire deployments. It relies on both of the previous stages and 
+will push new docker images as required when various commands are run.
 
 ```bash
 bazel run kubernetes:deploy.create
 bazel run kubernetes:deploy.delete
 ```
+
+These commands will have Bazel check for changes and rebuild the sources, generate
+a new image if needed, upload the updated image to docker, and finally generate and
+execute the appropriate kubectl commands to deploy it.
 
 ##### Remote Execution (tba)
 
