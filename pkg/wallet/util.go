@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+
 	"golang.org/x/crypto/ed25519"
 )
 
 // a set of currencies are valid iff:
 //   - value and decimal is positive
 //   - decimal == decimal % 100
-func (s Currencies) isValid() bool {
+func (s Account) isValid() bool {
 	for _, curr := range s {
-		if !curr.isPositive() {
+		if !curr.IsPositive() {
 			return false
 		}
 		if curr.Decimal != curr.Decimal%100 {
@@ -23,9 +24,9 @@ func (s Currencies) isValid() bool {
 	return true
 }
 
-// subtract one bank of currencies from another (piecewise)
-func (s Currencies) Subtract(s2 Currencies) Currencies {
-	out := Currencies{}
+// Subtract one bank of currencies from another (piecewise)
+func (s Account) Subtract(s2 Account) Account {
+	out := Account{}
 
 	// iterate over keys in 1st
 	for ident, sAmount := range s {
@@ -46,9 +47,9 @@ func (s Currencies) Subtract(s2 Currencies) Currencies {
 	return out
 }
 
-// returns the inverse value for each currency in the bank
-func (s Currencies) Inverse() Currencies {
-	out := Currencies{}
+// Inverse returns the inverse value for each currency in the bank
+func (s Account) Inverse() Account {
+	out := Account{}
 
 	for ident, sAmount := range s {
 		out[ident] = sAmount.Inverse()
@@ -57,19 +58,19 @@ func (s Currencies) Inverse() Currencies {
 	return out
 }
 
-// subtracts one DecimalAmount from another,
+// Subtract subtracts one DecimalAmount from another,
 // accounting for integer rollover
 func (d DecimalAmount) Subtract(d2 DecimalAmount) DecimalAmount {
 	newDecimal := (d.Decimal - d2.Decimal) % 100
 	newValue := d.Value - d2.Value
 	// subtract one if the decimal rolled over
 	if newDecimal > d.Decimal {
-		newValue -= 1
+		newValue--
 	}
 	return DecimalAmount{Decimal: newDecimal, Value: newValue}
 }
 
-// constructor for the transaction struct
+// NewTransaction is the constructor for the transaction struct
 func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency, amount DecimalAmount, create bool) (Transaction, error) {
 	if !create && (src == nil || len(src) != ed25519.PublicKeySize) {
 		return Transaction{}, fmt.Errorf("invalid source address provided")
@@ -82,17 +83,17 @@ func NewTransaction(src ed25519.PublicKey, dest ed25519.PublicKey, curr Currency
 	return Transaction{src, dest, [64]byte{}, curr, amount, create}, nil
 }
 
-// returns the inverse decimal amount under addition
+// Inverse returns the inverse decimal amount under addition
 func (d DecimalAmount) Inverse() DecimalAmount {
 	return DecimalAmount{Value: -d.Value, Decimal: -d.Decimal}
 }
 
-// returns whether the DecimalAmount is positive
-func (d DecimalAmount) isPositive() bool {
+// IsPositive returns whether the DecimalAmount is positive
+func (d DecimalAmount) IsPositive() bool {
 	return d.Value >= 0 && d.Decimal >= 0
 }
 
-// gets a []byte representation that can be signed
+// GetSignableRepresentation gets a []byte representation that can be signed
 func (t Transaction) GetSignableRepresentation() ([]byte, error) {
 	type sign struct {
 		Src    ed25519.PublicKey
@@ -109,13 +110,13 @@ func (t Transaction) GetSignableRepresentation() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// validates a request to pay somebody
+// IsVerified validates a request to pay somebody
 func (t *Transaction) IsVerified() bool {
 	data, err := t.GetSignableRepresentation()
 	return err == nil && (t.Create || ed25519.Verify(t.Src, data, t.Sig[:]))
 }
 
-// signs a request to pay somebody
+// Sign signs a request to pay somebody
 func (t *Transaction) Sign(key ed25519.PrivateKey) error {
 	if t.Create {
 		return fmt.Errorf("cannot sign a create transaction")
@@ -131,14 +132,14 @@ func (t *Transaction) Sign(key ed25519.PrivateKey) error {
 	return nil
 }
 
-// returns true if the wallet belonging to key
+// CheckBalance returns true if the wallet belonging to key
 // has more of the given decimalAmount than requestedAmount
 func (s *Store) CheckBalance(key ed25519.PublicKey, curr Currency, amount DecimalAmount) error {
 	wallet, ok := s.Lookup(key)
 	if !ok {
 		return fmt.Errorf("wallet does not exist")
 	}
-	if !wallet[curr].Subtract(DecimalAmount(amount)).isPositive() {
+	if !wallet[curr].Subtract(DecimalAmount(amount)).IsPositive() {
 		return fmt.Errorf("not enough cash: need %v, only have %v, would end up with %v", amount, wallet[curr], wallet[curr].Subtract(DecimalAmount(amount)))
 	}
 

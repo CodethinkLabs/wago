@@ -2,11 +2,16 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/raft"
 )
 
-func StatusCommand(getStatus func() (raft.RaftStatus, error)) cli.Command {
+// StatusCommand creates the status command which allows the
+// user to access information about the status of the cluster.
+//
+// syntax: status
+func StatusCommand(getStatus func() (raft.Status, error)) cli.Command {
 	statusExecutor := func(strings []string) error {
 		status, err := getStatus()
 		if err != nil {

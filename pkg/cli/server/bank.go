@@ -2,13 +2,15 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/util"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
 
-// executes the bank command, returning to the user the
-// current balance of all their local wallets
+// BankCommand creates the bank command, returning to the
+// user the current balance of all their local wallets
+//
 // syntax: bank [full]
 func BankCommand(store *wallet.Store) cli.Command {
 	bankExecutor := func(args []string) error {

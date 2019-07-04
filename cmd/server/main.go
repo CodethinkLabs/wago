@@ -75,13 +75,13 @@ func main() {
 		fmt.Println("Id set to", *id)
 	}
 
-	hostUrl, err := url.Parse(clusterNodes[*id-1])
+	hostURL, err := url.Parse(clusterNodes[*id-1])
 	if err != nil {
 		panic(err)
 	}
 
-	hostUrl.Host = "0.0.0.0:" + hostUrl.Port()
-	clusterNodes[*id-1] = hostUrl.String()
+	hostURL.Host = "0.0.0.0:" + hostURL.Port()
+	clusterNodes[*id-1] = hostURL.String()
 
 	if terminalAttached {
 		disableLogging()
@@ -103,7 +103,7 @@ func main() {
 	// this starts a goroutine
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC, wg)
+	store = wallet.NewStore(<-snapshotterReady, proposeC, commitC, errorC, &wg)
 
 	if *serverPort != "" {
 		go runGRPC(store, *serverPort)

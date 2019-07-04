@@ -19,7 +19,7 @@ func Test_walletstore_PrefixSearch(t *testing.T) {
 	type fields struct {
 		proposeC    chan<- string
 		mu          sync.RWMutex
-		walletStore map[[ed25519.PublicKeySize]byte]Currencies
+		walletStore map[[ed25519.PublicKeySize]byte]Account
 		snapshotter *snap.Snapshotter
 	}
 	type args struct {
@@ -42,7 +42,7 @@ func Test_walletstore_PrefixSearch(t *testing.T) {
 	}{
 		{
 			name: "Do smth",
-			fields: fields{walletStore: map[[32]byte]Currencies{
+			fields: fields{walletStore: map[[32]byte]Account{
 				goodKey: map[Currency]DecimalAmount{},
 				badKey:  map[Currency]DecimalAmount{},
 			}},
@@ -60,12 +60,12 @@ func Test_walletstore_PrefixSearch(t *testing.T) {
 				WalletStore: tt.fields.walletStore,
 				snapshotter: tt.fields.snapshotter,
 			}
-			got, got1 := s.PrefixSearch(tt.args.key)
+			got, got1 := s.Search(tt.args.key)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("walletstore.PrefixSearch() got = %v, want %v", got, tt.want)
+				t.Errorf("walletstore.Search() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("walletstore.PrefixSearch() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("walletstore.Search() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}

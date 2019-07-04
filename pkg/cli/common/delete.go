@@ -3,14 +3,16 @@ package common
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
-	"strings"
 )
 
-// executes the delete command, allowing the user
-// to remove keys from their personal wallet
+// DeleteCommand executes the delete command, allowing the
+// user to remove keys from their personal wallet
+//
 // syntax: delete ${PUBLIC_KEY}
 var DeleteCommand = cli.CreateCommand("delete", "Deletes a key from the local wallet", deleteExecutor, deleteCompleter)
 
@@ -35,9 +37,9 @@ func deleteExecutor(args []string) error {
 	}
 	if len(walletFile) == i {
 		return fmt.Errorf("no matching keys in wallet")
-	} else {
-		walletFile = walletFile[:i]
 	}
+
+	walletFile = walletFile[:i]
 	wallet.WriteWallet(walletFile)
 	return nil
 }

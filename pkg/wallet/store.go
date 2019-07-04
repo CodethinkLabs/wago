@@ -11,14 +11,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/CodethinkLabs/wago/pkg/util"
-	"go.etcd.io/etcd/etcdserver/api/snap"
-	"golang.org/x/crypto/ed25519"
 	"log"
 	"strings"
 	"sync"
+
+	"github.com/CodethinkLabs/wago/pkg/util"
+	"go.etcd.io/etcd/etcdserver/api/snap"
+	"golang.org/x/crypto/ed25519"
 )
 
+// DecimalAmount represents some decimal currency without
+// using floating point
 type DecimalAmount struct {
 	Value   int64
 	Decimal int8
@@ -28,17 +31,23 @@ func (d DecimalAmount) String() string {
 	return fmt.Sprintf("%d.%.2d", d.Value, d.Decimal)
 }
 
+// Currency represents some currency string
 type Currency string
-type Currencies map[Currency]DecimalAmount
 
-// a key-value store backed by raft
+// Account maps a range of currencies to a decimal amount
+type Account map[Currency]DecimalAmount
+
+// Store maps public keys to accounts, representing
+// the current state of the state machine
 type Store struct {
 	proposeC    chan<- string // channel for proposing updates
 	mu          sync.RWMutex
-	WalletStore map[[ed25519.PublicKeySize]byte]Currencies // current wallets
+	WalletStore map[[ed25519.PublicKeySize]byte]Account // current wallets
 	snapshotter *snap.Snapshotter
 }
 
+// Transaction is a state change transferring an
+// amount of some currency between wallets.
 type Transaction struct {
 	Src    ed25519.PublicKey
 	Dest   ed25519.PublicKey
@@ -48,14 +57,9 @@ type Transaction struct {
 	Create bool
 }
 
-// creates a new store to hold currencies
-// param snapshotter:
-// param proposeC:
-// param commitC:
-// param errorC:
-// param wg: A wait group that is done when the store goroutine ends (ie. when raft has terminated)
-func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error, wg sync.WaitGroup) *Store {
-	s := &Store{proposeC: proposeC, WalletStore: make(map[[32]byte]Currencies), snapshotter: snapshotter}
+// NewStore creates a new Store to hold currencies
+func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error, wg *sync.WaitGroup) *Store {
+	s := &Store{proposeC: proposeC, WalletStore: make(map[[ed25519.PublicKeySize]byte]Account), snapshotter: snapshotter}
 	s.readCommits(commitC, errorC)
 	go func() {
 		s.readCommits(commitC, errorC)
@@ -64,16 +68,18 @@ func NewStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-c
 	return s
 }
 
-// retrieves the currencies for a given public key
-func (s *Store) Lookup(key ed25519.PublicKey) (Currencies, bool) {
+// Lookup retrieves the currencies for a given public key
+func (s *Store) Lookup(key ed25519.PublicKey) (Account, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.WalletStore[util.ToBytes(key)]
 	return v, ok
 }
 
-// gets a unique public key from the store by its prefix
-func (s *Store) PrefixSearch(key string) (ed25519.PublicKey, bool) {
+// Search gets a unique public key from the store,
+// returning (key, true) if there is exactly
+// one match, else (nil, false).
+func (s *Store) Search(key string) (ed25519.PublicKey, bool) {
 	matches := make([]ed25519.PublicKey, 0)
 
 	for storeKey := range s.WalletStore {
@@ -87,17 +93,18 @@ func (s *Store) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 
 	if len(matches) == 1 {
 		return matches[0], true
-	} else {
-		return nil, false
 	}
+
+	return nil, false
 }
 
-// Provided a destination wallet, a decimalAmount (identifier and volume),
-// and a valid signature on the amount, this requests a transfer
-// from the src to the dest of the requested decimalAmount
+// Propose when provided a destination wallet, a decimalAmount,
+// a currency, and a valid signature on the transaction,
+// requests a transfer from the src to the dest of the
+// requested decimalAmount.
 //
-// performs a simple crypto check to make sure the transaction is
-// signed by the src address
+// Performs a simple crypto check to make sure the transaction is
+// signed by the src address.
 func (s *Store) Propose(trans Transaction) error {
 	if !trans.IsVerified() {
 		return fmt.Errorf("provided signature does not match the public key")
@@ -107,8 +114,8 @@ func (s *Store) Propose(trans Transaction) error {
 	if err := gob.NewEncoder(&buf).Encode(trans); err != nil {
 		return err
 	}
-	s.proposeC <- buf.String()
 
+	s.proposeC <- buf.String()
 	return nil
 }
 
@@ -157,7 +164,7 @@ func (s *Store) readCommits(commitC <-chan *string, errorC <-chan error) {
 		}
 
 		s.mu.Lock()
-		transfer := Currencies{nextTrans.Curr: nextTrans.Amount}
+		transfer := Account{nextTrans.Curr: nextTrans.Amount}
 		destWallet := s.WalletStore[util.ToBytes(nextTrans.Dest)]
 		if !nextTrans.Create {
 			srcWallet := s.WalletStore[util.ToBytes(nextTrans.Src)]
@@ -187,6 +194,7 @@ func (s *Store) readCommits(commitC <-chan *string, errorC <-chan error) {
 	}
 }
 
+// GetSnapshot marshals the store to be used by the snapshotter
 func (s *Store) GetSnapshot() ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -194,7 +202,7 @@ func (s *Store) GetSnapshot() ([]byte, error) {
 }
 
 func (s *Store) recoverFromSnapshot(snapshot []byte) error {
-	var store map[[ed25519.PublicKeySize]byte]Currencies
+	var store map[[ed25519.PublicKeySize]byte]Account
 	if err := json.Unmarshal(snapshot, &store); err != nil {
 		return err
 	}

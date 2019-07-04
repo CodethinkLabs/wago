@@ -3,12 +3,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/crypto/ed25519"
-	"strconv"
 )
 
 type commandContext struct {
@@ -18,8 +19,9 @@ type commandContext struct {
 	Password string
 }
 
-// executes the create command, generating currency in
+// CreateCommand creates the create command, generating currency in
 // the provided wallet address. Requires a server-set password.
+//
 // syntax: create ${ADDRESS} ${AMOUNT} ${CURRENCY} ${PASSWORD}
 func CreateCommand(context context.Context, client proto.WalletServiceClient) cli.Command {
 	createExecutor := func(args []string) error {
@@ -34,7 +36,7 @@ func CreateCommand(context context.Context, client proto.WalletServiceClient) cl
 		default:
 			fallthrough
 		case 5: // password
-			ctx.Password =  args[4]
+			ctx.Password = args[4]
 			fallthrough
 		case 4: // currency
 			ctx.Currency = wallet.Currency(args[3])
@@ -53,12 +55,12 @@ func CreateCommand(context context.Context, client proto.WalletServiceClient) cl
 
 		createClient, err := client.CreateCurrency(context, &proto.Create{
 			Update: &proto.WalletUpdate{
-				Dest: ctx.Address,
-				Amount: &proto.DecimalAmount{Value: ctx.Amount.Value, Decimal: int64(ctx.Amount.Decimal)},
+				Dest:     ctx.Address,
+				Amount:   &proto.DecimalAmount{Value: ctx.Amount.Value, Decimal: int64(ctx.Amount.Decimal)},
 				Currency: string(ctx.Currency),
 			},
 			Timestamp: ptypes.TimestampNow(),
-			Password: ctx.Password,
+			Password:  ctx.Password,
 		})
 
 		for {

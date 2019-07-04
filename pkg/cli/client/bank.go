@@ -3,14 +3,16 @@ package client
 import (
 	"context"
 	"fmt"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"golang.org/x/crypto/ed25519"
 )
 
-// executes the bank command, returning to the user the
-// current balance of all their local wallets
+// BankCommand creates the bank command, returning to the
+// user the current balance of all their local wallets
+//
 // syntax: bank [full]
 func BankCommand(ctx context.Context, client proto.WalletServiceClient) cli.Command {
 	bankExecutor := func(args []string) error {

@@ -3,14 +3,15 @@ package client
 import (
 	"context"
 	"encoding/hex"
+	"strconv"
+	"strings"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/proto"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/crypto/ed25519"
-	"strconv"
-	"strings"
 )
 
 // a context object that can be populated
@@ -24,8 +25,9 @@ type sendContext struct {
 	Currency   wallet.Currency
 }
 
-// executes the send command, allowing the user to
-// send currency from one of their wallets to another
+// SendCommand creates the send command, allowing the user
+// to send currency from one of their wallets to another.
+//
 // syntax: send ${SRC} ${DST} ${CURRENCY} ${AMOUNT}
 func SendCommand(ctx context.Context, client proto.WalletServiceClient) cli.Command {
 	sendExecutor := func(args []string) error {
@@ -59,7 +61,7 @@ func SendCommand(ctx context.Context, client proto.WalletServiceClient) cli.Comm
 		case 0:
 		}
 
-		return createTransaction(sendCtx, ctx, client)
+		return createTransaction(ctx, sendCtx, client)
 	}
 
 	sendCompleter := func(in prompt.Document) []prompt.Suggest {
@@ -89,7 +91,7 @@ func SendCommand(ctx context.Context, client proto.WalletServiceClient) cli.Comm
 	return cli.CreateCommand("send", "Send currency from one of your local wallets", sendExecutor, sendCompleter)
 }
 
-func createTransaction(sendCtx sendContext, ctx context.Context, client proto.WalletServiceClient) error {
+func createTransaction(ctx context.Context, sendCtx sendContext, client proto.WalletServiceClient) error {
 	trans, err := wallet.NewTransaction(sendCtx.SrcPublic, sendCtx.DstPublic, sendCtx.Currency, wallet.DecimalAmount{Value: sendCtx.Value, Decimal: sendCtx.Decimal}, false)
 	if err != nil {
 		return err
@@ -102,16 +104,16 @@ func createTransaction(sendCtx sendContext, ctx context.Context, client proto.Wa
 
 	protoTransaction := &proto.Transaction{
 		Update: &proto.WalletUpdate{
-			Src: sendCtx.SrcPublic,
+			Src:  sendCtx.SrcPublic,
 			Dest: sendCtx.DstPublic,
 			Amount: &proto.DecimalAmount{
-				Value: sendCtx.Value,
+				Value:   sendCtx.Value,
 				Decimal: int64(sendCtx.Decimal),
 			},
 			Currency: string(sendCtx.Currency),
 		},
 		Timestamp: ptypes.TimestampNow(),
-		Sig: trans.Sig[:],
+		Sig:       trans.Sig[:],
 	}
 
 	transactionClient, err := client.SubmitTransaction(ctx, protoTransaction)

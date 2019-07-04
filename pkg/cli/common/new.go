@@ -2,14 +2,16 @@ package common
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"golang.org/x/crypto/ed25519"
-	"strings"
 )
 
-// executes the new command, allowing the user to
-// generate new keypairs for use in the system
+// NewCommand executes the new command, allowing the
+// user to generate new keypairs for use in the system
+//
 // syntax: new ${OPTIONAL MULTI-WORD SEED}
 var NewCommand = cli.CreateCommand("new", "Creates a new local wallet", newCommand, nil)
 

@@ -7,25 +7,25 @@ import (
 
 func TestCurrencies_Subtract(t *testing.T) {
 	type args struct {
-		s2 Currencies
+		s2 Account
 	}
 	tests := []struct {
 		name string
-		s    Currencies
+		s    Account
 		args args
-		want Currencies
+		want Account
 	}{
 		{
 			"Test",
-			Currencies{"usd": {Value: 10, Decimal: 0}},
-			args{s2: Currencies{"usd": {Value: 2, Decimal: 0}}},
-			Currencies{"usd": {Value: 8, Decimal: 0}},
+			Account{"usd": {Value: 10, Decimal: 0}},
+			args{s2: Account{"usd": {Value: 2, Decimal: 0}}},
+			Account{"usd": {Value: 8, Decimal: 0}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.s.Subtract(tt.args.s2); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Currencies.Subtract() = %v, want %v", got, tt.want)
+				t.Errorf("Account.Subtract() = %v, want %v", got, tt.want)
 			}
 		})
 	}

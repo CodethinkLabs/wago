@@ -10,18 +10,20 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/crypto/ed25519"
-	"golang.org/x/crypto/pbkdf2"
-	"golang.org/x/crypto/sha3"
-	"golang.org/x/crypto/ssh/terminal"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
 	"strings"
 	"syscall"
+
+	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/ssh/terminal"
+	"gopkg.in/yaml.v2"
 )
 
+// FILENAME is where the wallet file is stored
 const FILENAME = "wallet"
 
 var password string
@@ -60,9 +62,9 @@ func (w localWallet) PrefixSearch(key string) (ed25519.PublicKey, bool) {
 
 	if len(matches) == 1 {
 		return matches[0], true
-	} else {
-		return nil, false
 	}
+
+	return nil, false
 }
 
 // gets all the public keys from the wallet
@@ -74,7 +76,7 @@ func (w localWallet) GetKeys() []ed25519.PublicKey {
 	return keys
 }
 
-// writes the localWallet to disk
+// WriteWallet writes the localWallet to disk
 func WriteWallet(wallet localWallet) {
 	data, err := yaml.Marshal(&wallet)
 	if err != nil {
@@ -91,7 +93,7 @@ func WriteWallet(wallet localWallet) {
 	}
 }
 
-// reads the localWallet from disk
+// ReadWallet reads the localWallet from disk
 func ReadWallet() (localWallet, error) {
 	data, err := ioutil.ReadFile(FILENAME)
 	if err != nil {
@@ -111,9 +113,8 @@ func ReadWallet() (localWallet, error) {
 	return wallet, nil
 }
 
-// stores the provided password for
-// use when reading and writing to
-// the encrypted wallet
+// Authenticate stores the provided password for use
+// when reading and writing to the encrypted wallet
 func Authenticate(newPassword *string) {
 	if newPassword == nil {
 		fmt.Print("Enter Password: ")
@@ -129,7 +130,8 @@ func Authenticate(newPassword *string) {
 	}
 }
 
-// generates an ed25519 keypair from an optional seed
+// GenerateKeys generates an ed25519 keypair from
+// an optional seed
 func GenerateKeys(seed *string) (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	var privateKey ed25519.PrivateKey
 	var publicKey ed25519.PublicKey
@@ -142,13 +144,13 @@ func GenerateKeys(seed *string) (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	}
 	if err != nil {
 		return nil, nil, err
-	} else {
-		return privateKey, publicKey, nil
 	}
+
+	return privateKey, publicKey, nil
 }
 
-// appends a given public and private key to the localWallet,
-// ignoring them if they already exist in the local wallet
+// AddKeyPair appends a given public and private key to
+// the localWallet, ignoring them if they already exist
 func AddKeyPair(wallet localWallet, publicKey ed25519.PublicKey, privateKey ed25519.PrivateKey) localWallet {
 	for _, entry := range wallet {
 		if string(entry.PublicKey) == string(publicKey) || string(entry.PrivateKey) == string(privateKey) {
@@ -160,8 +162,8 @@ func AddKeyPair(wallet localWallet, publicKey ed25519.PublicKey, privateKey ed25
 	return wallet
 }
 
-// given some plaintext and a password,
-// returns the AES ciphertext^nonce
+// AESEncrypt when given some plaintext and a password,
+// returns the AES ciphertext concatted with the nonce
 func AESEncrypt(plaintext []byte, password string) []byte {
 	passwordHash := hashPassword(password)
 
@@ -195,8 +197,8 @@ func AESEncrypt(plaintext []byte, password string) []byte {
 	return ciphertext
 }
 
-// given some ciphertext^nonce, and a password
-// returns the AES plaintext
+// AESDecrypt when given some ciphertext concatted nonce
+// and a password, returns the AES plaintext
 func AESDecrypt(data []byte, password string) ([]byte, error) {
 	// strip magic sequence
 	data = data[10:]

@@ -3,12 +3,13 @@ package server
 import (
 	"bytes"
 	"encoding/hex"
+	"strconv"
+	"strings"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 	"github.com/c-bata/go-prompt"
 	"golang.org/x/crypto/ed25519"
-	"strconv"
-	"strings"
 )
 
 // a context object that can be populated
@@ -21,8 +22,9 @@ type sendContext struct {
 	Currency   wallet.Currency
 }
 
-// executes the send command, allowing the user to
-// send currency from one of their wallets to another
+// SendCommand executes the send command, allowing the user
+// to send currency from one of their wallets to another
+//
 // syntax: send ${SRC} ${DST} ${AMOUNT} ${CURRENCY}
 func SendCommand(store *wallet.Store) cli.Command {
 	sendExecutor := func(args []string) error {
@@ -44,7 +46,7 @@ func SendCommand(store *wallet.Store) cli.Command {
 			ctx.Amount = wallet.DecimalAmount{Value: int64(num)}
 			fallthrough
 		case 3: // dst address
-			if match, ok := store.PrefixSearch(args[2]); ok {
+			if match, ok := store.Search(args[2]); ok {
 				ctx.DstPublic = match
 			} else if hexBytes, err := hex.DecodeString(args[2]); len(hexBytes) == ed25519.PublicKeySize && err == nil {
 				ctx.DstPublic = hexBytes
@@ -101,8 +103,9 @@ func SendCommand(store *wallet.Store) cli.Command {
 	return cli.CreateCommand("send", "Send currency from one of your local wallets", sendExecutor, sendCompleter)
 }
 
-// executes the create command, allowing the user to
-// create currency and deposit into the provided wallet
+// CreateCommand creates the create command, allowing the user
+// to create currency and deposit into the provided wallet
+//
 // syntax: create ${KEY} ${AMOUNT} ${CURRENCY}
 func CreateCommand(store *wallet.Store) cli.Command {
 	createExecutor := func(args []string) error {
@@ -120,7 +123,7 @@ func CreateCommand(store *wallet.Store) cli.Command {
 			fallthrough
 		case 3: // amount todo(arlyon) decimal numbers
 			num, _ := strconv.Atoi(args[2])
-			ctx.Amount.Value= int64(num)
+			ctx.Amount.Value = int64(num)
 			fallthrough
 		case 2:
 			if match, ok := walletFile.PrefixSearch(args[1]); ok {

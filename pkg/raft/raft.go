@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-//
-//
+// Package raft implements the write-ahead log,
+// snapshotting, and peer management for the algorithm.
 package raft
 
 import (
@@ -76,10 +75,13 @@ type raftNode struct {
 
 var defaultSnapshotCount uint64 = 10000
 
+// Log is the log to use for wagoraft
 var Log = log.New(os.Stdout, "wagoraft: ", 0)
+
+// ZapLog is the log to use with etcdraft
 var ZapLog = zap.NewExample()
 
-// newRaftNode initiates a raft instance and returns a committed log entry
+// NewRaftNode initiates a raft instance and returns a committed log entry
 // channel and error channel. Proposals for log updates are sent over the
 // provided proposal channel. All log entries are replayed over the
 // commit channel, followed by a nil message (to indicate the channel is
@@ -96,7 +98,7 @@ var ZapLog = zap.NewExample()
 //   - A channel for errors
 //   - A channel to signal when the snapshotter is ready
 func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, error), proposeC <-chan string,
-	confChangeC <-chan raftpb.ConfChange) (<-chan *string, <-chan error, <-chan *snap.Snapshotter, func() (RaftStatus, error)) {
+	confChangeC <-chan raftpb.ConfChange) (<-chan *string, <-chan error, <-chan *snap.Snapshotter, func() (Status, error)) {
 
 	commitC := make(chan *string)
 	errorC := make(chan error)
@@ -125,7 +127,9 @@ func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, 
 	return commitC, errorC, rc.snapshotterReady, status(rc)
 }
 
-type RaftStatus struct {
+// Status provides information about the current
+// state of the raft cluster.
+type Status struct {
 	ID              types.ID // this node's ID in the cluster
 	Nodes           []uint64 // an array of all the node IDs
 	ActiveNodeCount int      // the number of active nodes
@@ -134,27 +138,27 @@ type RaftStatus struct {
 
 // a higher order function that returns the server
 // stats for a given function
-func status(rc *raftNode) func() (RaftStatus, error) {
+func status(rc *raftNode) func() (Status, error) {
 	zeroTime := time.Time{}
 
-	return func() (RaftStatus, error) {
+	return func() (Status, error) {
 		if rc.transport == nil {
-			return RaftStatus{}, fmt.Errorf("transport not initialized")
-		} else {
-			activeNodes := make([]uint64, 0)
-			for _, nodeId := range rc.confState.Nodes {
-				if rc.transport.ActiveSince(types.ID(nodeId)) != zeroTime {
-					activeNodes = append(activeNodes, nodeId)
-				}
-			}
-
-			return RaftStatus{
-				Nodes:           rc.confState.Nodes,
-				ID:              rc.transport.ID,
-				ActiveNodeCount: rc.transport.ActivePeers(),
-				ActiveNodes:     activeNodes,
-			}, nil
+			return Status{}, fmt.Errorf("transport not initialized")
 		}
+
+		activeNodes := make([]uint64, 0)
+		for _, nodeID := range rc.confState.Nodes {
+			if rc.transport.ActiveSince(types.ID(nodeID)) != zeroTime {
+				activeNodes = append(activeNodes, nodeID)
+			}
+		}
+
+		return Status{
+			Nodes:           rc.confState.Nodes,
+			ID:              rc.transport.ID,
+			ActiveNodeCount: rc.transport.ActivePeers(),
+			ActiveNodes:     activeNodes,
+		}, nil
 	}
 }
 

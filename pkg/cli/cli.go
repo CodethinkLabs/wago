@@ -1,4 +1,4 @@
-// package cli provides the command line interface
+// Package cli provides the command line interface
 // for the application. There are a few commands
 // that are available for use, which are implemented
 // in separate files
@@ -6,13 +6,14 @@ package cli
 
 import (
 	"fmt"
-	"github.com/c-bata/go-prompt"
 	"os"
 	"strings"
+
+	"github.com/c-bata/go-prompt"
 )
 
-// provided a list of commands, generates a Completer
-// and Executor to run those commands
+// CreateCLI when provided a list of commands, generates a
+// Completer and Executor to run those commands
 func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) []prompt.Suggest) {
 
 	var commandList Commands = commands
@@ -55,14 +56,16 @@ func CreateCLI(commands ...Command) (func(in string), func(in prompt.Document) [
 		}
 		if match.Completer != nil {
 			return match.Completer(in)
-		} else {
-			return []prompt.Suggest{}
 		}
+
+		return []prompt.Suggest{}
 	}
 
 	return executor, completer
 }
 
+// StartCLI runs the command line with the
+// given executor and completer functions
 func StartCLI(executor func(in string), completer func(in prompt.Document) []prompt.Suggest) {
 	fmt.Println("Welcome to wago.")
 	p := prompt.New(
@@ -80,4 +83,3 @@ func StartCLI(executor func(in string), completer func(in prompt.Document) []pro
 	)
 	p.Run()
 }
-

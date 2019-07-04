@@ -5,9 +5,10 @@ import (
 	"github.com/CodethinkLabs/wago/pkg/wallet"
 )
 
-// executes the auth command, allowing the user to
-// set a password for the current session for
+// AuthCommand executes the auth command, allowing the
+// user to set a password for the current session for
 // encryption and decryption of the wallet file
+//
 // syntax: auth ${OPTIONAL_PASS}
 var AuthCommand = cli.CreateCommand("auth", "Set the password for the session", authExecutor, nil)
 

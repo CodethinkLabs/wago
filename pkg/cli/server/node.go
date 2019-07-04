@@ -2,23 +2,26 @@ package server
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/CodethinkLabs/wago/pkg/cli"
 	"github.com/CodethinkLabs/wago/pkg/raft"
 	"github.com/c-bata/go-prompt"
 	"go.etcd.io/etcd/raft/raftpb"
-	"strconv"
-	"strings"
 )
 
-// executes the node command, allowing members
+// NodeCommand creates the node command, allowing members
 // of the cluster to add and remove nodes
-func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.RaftStatus, error)) cli.Command {
+//
+// syntax: node create|delete ${ID} [URL]
+func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft.Status, error)) cli.Command {
 	nodeCreateExecutor := func(args []string) error {
 		if len(args) != 3 {
 			return fmt.Errorf("command takes exactly ${ID} ${URL}")
 		}
 
-		nodeId, err := strconv.ParseUint(args[1], 0, 64)
+		nodeID, err := strconv.ParseUint(args[1], 0, 64)
 		if err != nil {
 			return fmt.Errorf("node id not a valid integer")
 		}
@@ -26,7 +29,7 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 
 		cc := raftpb.ConfChange{
 			Type:    raftpb.ConfChangeAddNode,
-			NodeID:  nodeId,
+			NodeID:  nodeID,
 			Context: []byte(url),
 		}
 		confChangeC <- cc
@@ -38,14 +41,14 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 			return fmt.Errorf("command takes exactly ${ID}")
 		}
 
-		nodeId, err := strconv.ParseUint(args[1], 0, 64)
+		nodeID, err := strconv.ParseUint(args[1], 0, 64)
 		if err != nil {
 			return fmt.Errorf("node id not a valid integer")
 		}
 
 		cc := raftpb.ConfChange{
 			Type:   raftpb.ConfChangeRemoveNode,
-			NodeID: nodeId,
+			NodeID: nodeID,
 		}
 		confChangeC <- cc
 		return nil
@@ -56,8 +59,8 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 
 		status, err := statusGetter()
 		if err == nil {
-			for _, nodeId := range status.Nodes {
-				suggestions = append(suggestions, prompt.Suggest{Text: fmt.Sprint(nodeId)})
+			for _, nodeID := range status.Nodes {
+				suggestions = append(suggestions, prompt.Suggest{Text: fmt.Sprint(nodeID)})
 			}
 		}
 
@@ -99,5 +102,5 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 		return []prompt.Suggest{}
 	}
 
-	return cli.CreateCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
+	return cexecutesCreateCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
 }
