@@ -102,5 +102,5 @@ func NodeCommand(confChangeC chan<- raftpb.ConfChange, statusGetter func() (raft
 		return []prompt.Suggest{}
 	}
 
-	return cexecutesCreateCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
+	return cli.CreateCommand("node", "Configure the cluster layout", nodeExecutor, nodeCompleter)
 }
